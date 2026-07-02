@@ -12,10 +12,28 @@ It's built unusually, too: **written by a coding agent** driving the live image 
 
 ## Install
 
-No external dependencies — base Cuis image only. File in `Blueprint.pck.st`, then make Blueprint the current theme:
+File in `Blueprint.pck.st` (e.g. from a File List: select it, `install package`). Everything else is automatic: the package pulls in `WebClient` (shipped with Cuis; used for HTTPS), downloads the [Tabler Icons](https://tabler.io/icons) font from the jsDelivr CDN on first install, and activates the theme, dock and virtual desktops on its own — no manual step.
+
+Works on a stock current Cuis image. If you ever need to re-activate by hand:
 
 ```smalltalk
-BlueprintTheme beCurrent.   "themes the world; installs the dock + Stage"
+BlueprintTheme beCurrent.
+```
+
+## The type scale
+
+All UI text sits on one modular scale (ratio ∛2, so sizes double every three steps), rooted at a single logical size — rem, basically. Widgets ask for hierarchy, never points:
+
+```smalltalk
+Theme current fontAt: 0.    "body"
+Theme current fontAt: 1.    "window titles"
+Theme current fontAt: -1.   "menus, pills"
+```
+
+And the whole UI zooms with one knob:
+
+```smalltalk
+BlueprintTheme fontPointSize: 14.   "default 12; every font follows"
 ```
 
 ## License
