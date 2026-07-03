@@ -1,6 +1,6 @@
-'From Cuis7.9 [latest update: #7983] on 3 July 2026 at 2:01:10 pm'!
+'From Cuis7.9 [latest update: #7983] on 3 July 2026 at 4:37:17 pm'!
 'Description '!
-!provides: 'Blueprint' 1 281!
+!provides: 'Blueprint' 1 287!
 !requires: 'WebClient' 1 nil 1!
 SystemOrganization addCategory: #Blueprint!
 SystemOrganization addCategory: #'Blueprint-StateMachine'!
@@ -301,7 +301,7 @@ MorphHaloHandle class
 
 !classDefinition: #SearchField category: #Blueprint!
 EntryFieldMorph subclass: #SearchField
-	instanceVariableNames: 'changedAction placeholder placeholderColor'
+	instanceVariableNames: 'changedAction placeholder'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Blueprint'!
@@ -536,6 +536,15 @@ animateMorph: aMorph using: aBlock duration: ms onDone: doneBlock
 	"Convenience matching the old Dock signature; defaults to cubic ease-in-out."
 	^ self animate: aMorph using: aBlock duration: ms easing: #cubicInOut onDone: doneBlock! !
 
+!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 15:46:54'!
+ensureTicking
+	"Heartbeat: if animations are pending, make sure a frame alarm is actually coming --
+	scheduleNextFrame's watchdog reclaims an arm that is stale (lost world, or era-shifted
+	by the startup clock correction; see its comment). Called from the world cycle (the
+	active SpaceCard's #step), which is the only driver guaranteed to run AFTER startup
+	-- deferred-message tricks all drain in the same startup cycle and stay pre-shift."
+	animations isEmpty ifFalse: [self scheduleNextFrame]! !
+
 !Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 14:00:52'!
 rearm
 	"Drop any pending alarm and re-arm freshly on the current world (no-op without
@@ -548,7 +557,7 @@ rearm
 	armedAtMs := nil.
 	animations isEmpty ifFalse: [self scheduleNextFrame]! !
 
-!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 13:57:27'!
+!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 15:46:54'!
 scheduleNextFrame
 	"Arm a one-shot World alarm for the next frame -- with a heartbeat watchdog. A
 	pending arm is trusted only if it is on the CURRENT world and recent; otherwise the
@@ -562,7 +571,7 @@ scheduleNextFrame
 	w := self world.
 	w ifNil: [^ self].
 	now := Time localMillisecondClock.
-	(armedWorld == w and: [armedAtMs notNil and: [now - armedAtMs < 2000]]) ifTrue: [^ self].
+	(armedWorld == w and: [armedAtMs notNil and: [now - armedAtMs < 1000]]) ifTrue: [^ self].
 	armedWorld == w ifTrue: [w removeAlarm: #stepAnimationsAt: for: self].
 	w addAlarm: #stepAnimationsAt: withArguments: #() for: self at: now + self class frameMs.
 	armedWorld := w.
@@ -844,14 +853,14 @@ name: aString
 printOn: aStream
 	aStream nextPutAll: 'Space('; nextPutAll: (name ifNil: ['unnamed']); nextPutAll: ')'! !
 
-!Stage methodsFor: 'initialization' stamp: ''!
+!Stage methodsFor: 'initialization' stamp: 'ML 3/Jul/2026 14:41:04'!
 initialize
 	super initialize.
 	placements := IdentityDictionary new.
 	spaces := OrderedCollection with: Space new.
 	active := spaces first.
 	shown := active.
-	views := OrderedCollection new.
+	views := Dictionary new.
 	flights := IdentitySet new.
 	reservations := OrderedCollection new.
 	mode := self modeChart.
@@ -937,14 +946,17 @@ switchSettled
 	self notify: #settled with: active.
 	mode fire: #settle! !
 
-!Stage methodsFor: 'events' stamp: ''!
+!Stage methodsFor: 'events' stamp: 'ML 3/Jul/2026 15:38:11'!
 switchTo: aSpace
-	"Point `active` at aSpace and enter #switching; views fly windows to make `shown` catch up. While
-	busy (switching, or in overview) the request waits -- last one wins -- and drains on the next
-	transition into #settled."
+	"Point `active` at aSpace and enter #switching; views fly windows to make `shown` catch up.
+	While busy the request waits -- last one wins -- and drains on the next transition into
+	#settled (or when the last flight lands). Two gates: the mode chart (no switch during a
+	switch or overview) AND in-flight windows -- a switch fired while a window is still flying
+	between placements (a move:to: stow, a restore) would stow/release around the airborne
+	window and corrupt the card hand-off, so it queues instead."
 	(spaces includes: aSpace) ifFalse: [^ self].
 	aSpace == active ifTrue: [^ self].
-	(mode can: #switch) ifFalse: [pending := aSpace. ^ self].
+	((mode can: #switch) and: [flights isEmpty]) ifFalse: [pending := aSpace. ^ self].
 	active := aSpace.
 	mode fire: #switch.
 	self notify: #switch with: aSpace! !
@@ -952,10 +964,6 @@ switchTo: aSpace
 !Stage methodsFor: 'private' stamp: ''!
 drainPending
 	pending ifNotNil: [:p | pending := nil. self switchTo: p]! !
-
-!Stage methodsFor: 'private' stamp: ''!
-notify: event with: arg
-	views do: [:v | v value: event value: arg]! !
 
 !Stage methodsFor: 'private' stamp: ''!
 reconcile
@@ -977,16 +985,33 @@ flightBegan: aWindow
 	in-flight windows); all CONTROL flow lives in the mode chart."
 	flights add: aWindow! !
 
-!Stage methodsFor: 'views' stamp: ''!
+!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026 15:38:11'!
 flightEnded: aWindow
-	flights remove: aWindow ifAbsent: []! !
+	"A view reports aWindow's flight landed. When the LAST flight lands on a settled stage,
+	drain any switch that queued while windows were airborne (switchTo: defers on flights --
+	see its comment; the mode-transition drain only covers switches queued during #switching)."
+	flights remove: aWindow ifAbsent: [].
+	(flights isEmpty and: [mode is: #settled]) ifTrue: [self drainPending]! !
 
-!Stage methodsFor: 'views' stamp: ''!
+!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026 14:41:04'!
+notify: event with: arg
+	views valuesDo: [:v | v value: event value: arg]! !
+
+!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026 14:41:04'!
 onChange: aBlock
-	"Subscribe a view: aBlock gets (eventSymbol, argument) after every model change --
-	#managed/#forgotten/#minimized/#restored with the window, #switch/#settled with the space,
-	#spaces with nil. Views render from the model; this is their wake-up call."
-	views add: aBlock! !
+	"Anonymous subscription (unique key): kept for listeners that are never recreated.
+	Views with a lifecycle should use onChange:for: and a stable key."
+	views at: Object new put: aBlock! !
+
+!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026 14:41:04'!
+onChange: aBlock for: aKey
+	"Subscribe a view under aKey: aBlock gets (eventSymbol, argument) after every model
+	change -- #managed/#forgotten/#minimized/#restored with the window, #switch/#settled
+	with the space, #spaces with nil. KEYED so a recreated view (theme reapplied, a new
+	Dock after startup) REPLACES its predecessor's subscription instead of stacking a
+	ghost listener -- two docks fighting over the same stow/release choreography corrupts
+	placements."
+	views at: aKey put: aBlock! !
 
 !Stage methodsFor: 'windows' stamp: ''!
 minimize: aWindow
@@ -1060,11 +1085,13 @@ initialFrameFor: anExtent
 				ifTrue: [^ (frame aligned: (frame perform: cornerSel) with: putative) translatedAndSquishedToBeWithin: a]]].
 	^ (a origin extent: anExtent) translatedAndSquishedToBeWithin: a! !
 
-!Stage methodsFor: 'real estate' stamp: ''!
+!Stage methodsFor: 'real estate' stamp: 'ML 3/Jul/2026 14:41:04'!
 reserve: anObject
 	"Register a screen-edge reserver: an object answering #screenStrut (an edge -> thickness
-	association). The arena excludes every reserved strip. Idempotent."
-	(reservations includes: anObject) ifFalse: [reservations add: anObject]! !
+	association). The arena excludes every reserved strip. One reservation per CLASS: a
+	recreated dock replaces its predecessor's strut instead of double-reserving the edge."
+	reservations := reservations reject: [:r | r class == anObject class].
+	reservations add: anObject! !
 
 !Stage methodsFor: 'real estate' stamp: ''!
 settleWindowsIntoArena
@@ -1413,62 +1440,62 @@ initialize
 	"BlueprintTheme initialize"
 	Smalltalk addToStartUpList: self! !
 
-!BlueprintTheme class methodsFor: 'startup' stamp: ''!
-startUp: x
-	"Reinstall blueprint tile and re-anchor the dock on image resume / display resize."
-	Theme current class == self ifFalse: [^ self].
-	WorldMorph allInstances ifNotEmpty: [:ws |
-		| w |
-		w := ws first.
-		w backgroundImage: self tile.
-		(w taskbar isKindOf: Dock) ifTrue: [
-			[w taskbar reflow] on: Error do: [:ex | ]]]! !
+!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026 15:38:57'!
+applyLookWhenWorldReady
+	"The world-facing half of activation: typography, theme + chrome + Dock + Stage
+	(super beCurrent -> currentTheme:), then the Animator rearm one cycle later.
+	SELF-RETRYING: during a scripted startup (-r installs, -s scripts) the deferred-message
+	queue drains BEFORE the UI world is fully up -- runningWorld answers nil, and a plain
+	guard would silently skip the Dock/Stage setup (the theme would apply but the desktop
+	would never assemble). So when the world is not ready yet, re-defer OURSELVES and try
+	again next cycle; the world always arrives, and activation completes unattended."
+	UISupervisor runningWorld isNil ifTrue: [
+		^ UISupervisor whenUIinSafeState: [self applyLookWhenWorldReady]].
+	self applyTypography.
+	super beCurrent.
+	UISupervisor whenUIinSafeState: [Animator default rearm]! !
 
-!BlueprintTheme class methodsFor: 'theme' stamp: ''!
+!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026 15:38:57'!
+beCurrent
+	"The single, robust entry point for activating the Blueprint desktop environment:
+	 (1) ensure the Tabler icon font is downloaded, registered, and its codepoints parsed;
+	 (2) apply Blueprint's typography -- #fontPointSize logical points scaled to the display;
+	 (3) apply the theme + window chrome + Dock + Stage; and
+	 (4) rearm the Animator one cycle later (see Animator>>rearm -- startup era-shifts alarms).
+	Steps 2-4 need a running UI world and live in applyLookWhenWorldReady, which runs inline
+	when called from the UI process (File List install, theme picker) and otherwise defers --
+	re-deferring itself until the world exists, so scripted startups assemble unattended.
+	Idempotent."
+	SymbolFont codepoints.
+	UISupervisor runningWorld isNil
+		ifTrue: [UISupervisor whenUIinSafeState: [self applyLookWhenWorldReady]]
+		ifFalse: [self applyLookWhenWorldReady].
+	^ self! !
+
+!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026 16:37:07'!
 currentTheme: aTheme
-	"Apply the standard Theme machinery, then install the blueprint tile and the Blueprint dock (Dock)
-	as the world taskbar anchored to the bottom edge, and connect it to the Stage: existing desktop
-	windows join the active space, the dock listens for Stage changes, and the cards mirror the spaces."
+	"Apply the standard Theme machinery, then install the blueprint tile and the Dock
+	(via installDockIn:) as the world taskbar, connected to the Stage."
 	super currentTheme: aTheme.
 	self runningWorld ifNotNil: [:w |
 		w backgroundImage: self tile.
 		w taskbar ifNotNil: [:bar | (bar isKindOf: Dock) ifFalse: [bar delete. w instVarNamed: 'taskbar' put: nil]].
-		w taskbar isNil ifTrue: [
-			w instVarNamed: 'taskbar' put: Dock new.
-			w addMorph: w taskbar.
-			w taskbar reflow].
-		w desktopWindows do: [:win | Stage default manage: win].
-		w taskbar connectStage.
-		w taskbar syncCards.
+		w taskbar isNil ifTrue: [self installDockIn: w].
 		w fullRepaintNeeded].
 	^ aTheme! !
 
-!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026 14:00:52'!
-beCurrent
-	"The single, robust entry point for activating the Blueprint desktop environment:
-	 (1) ensure the Tabler icon font is downloaded, registered, and its codepoints parsed;
-	 (2) apply Blueprint's typography -- #fontPointSize logical points scaled to the display (base Cuis
-	     ships an UNSCALED default that renders tiny on HiDPI); zoom the UI with #fontPointSize:; and
-	 (3) apply the theme + window chrome + Dock + Stage (inherited beCurrent -> currentTheme:); then
-	 (4) nudge the Animator: activation during startup can leave animations armed on a lost alarm
-	     (see Animator>>scheduleNextFrame) -- the nudge lets its watchdog reclaim and the pending
-	     card/tile animations complete.
-	Steps 2-4 touch the UI and need UISupervisor runningWorld, which is nil outside the UI process: when
-	called from a non-UI context (startup -r, a script, a bridge eval) they are deferred via
-	whenUIinSafeState:; when already in the UI process (File List, theme picker) they run inline. Idempotent."
-	| applyLook |
-	SymbolFont codepoints.
-	applyLook := [
-		self applyTypography.
-		super beCurrent.
-		"Queued as a SECOND deferral: it must run a cycle later, after the world's
-		first alarm pass has done its startup era-adjustment -- an alarm armed in
-		THIS drain gets shifted into the far future by it (see Animator>>rearm)."
-		UISupervisor whenUIinSafeState: [Animator default rearm]].
-	UISupervisor runningWorld isNil
-		ifTrue: [UISupervisor whenUIinSafeState: applyLook]
-		ifFalse: [applyLook value].
-	^ self! !
+!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026 16:36:57'!
+installDockIn: aWorld
+	"Install a freshly wired Dock as aWorld's taskbar: existing desktop windows join the
+	active space, the dock listens for Stage changes, and the cards mirror the spaces.
+	The single source of truth for dock installation -- called from activation
+	(currentTheme:) and from any taskbar rebuild (WorldMorph>>showTaskbar)."
+	aWorld instVarNamed: 'taskbar' put: Dock new.
+	aWorld addMorph: aWorld taskbar.
+	aWorld taskbar reflow.
+	aWorld desktopWindows do: [:win | Stage default manage: win].
+	aWorld taskbar connectStage.
+	aWorld taskbar syncCards! !
 
 !BlueprintTheme class methodsFor: 'typography' stamp: ''!
 applyTypography
@@ -1498,6 +1525,27 @@ fontPointSize: aLogicalPointSize
 	UISupervisor runningWorld isNil
 		ifTrue: [UISupervisor whenUIinSafeState: [self applyTypography]]
 		ifFalse: [self applyTypography]! !
+
+!BlueprintTheme class methodsFor: 'system startup' stamp: 'ML 3/Jul/2026 16:09:41'!
+fitDisplay
+	"Refit the desktop to the current display geometry: re-tile the wallpaper and
+	reflow the Dock. Geometry only -- never re-runs activation. (Activation itself
+	triggers restoreDisplay via Theme class>>currentTheme:, so anything stronger
+	than a refit here would make activation re-enter itself.)"
+	| w |
+	w := UISupervisor ui.
+	w ifNil: [^ self].
+	w backgroundImage: self tile.
+	(w taskbar isKindOf: Dock) ifTrue: [w taskbar reflow]! !
+
+!BlueprintTheme class methodsFor: 'system startup' stamp: 'ML 3/Jul/2026 16:37:07'!
+startUp: resuming
+	"Image startup hook (registered in the startup list): refit the desktop to the
+	current display geometry -- it may differ from the one the image was saved on.
+	Dock survival across upstream desktop rebuilds is NOT handled here -- the theme-aware
+	WorldMorph>>showTaskbar override covers every rebuild path structurally."
+	Theme current class == self ifFalse: [^ self].
+	self fitDisplay! !
 
 !Popover methodsFor: 'drawing' stamp: ''!
 drawOn: aCanvas
@@ -2886,10 +2934,11 @@ centerString: str at: pt font: f color: c on: aCanvas
 	w := f widthOfString: str.
 	aCanvas drawString: str at: (pt x - (w / 2.0)) @ (pt y - (f ascent * 0.65)) font: f color: c! !
 
-!AnalogClock methodsFor: 'drawing' stamp: ''!
+!AnalogClock methodsFor: 'drawing' stamp: 'ML 3/Jul/2026 15:40:04'!
 drawOn: aCanvas
-	"Apple-style clock. secf reads #secOverride property if set (for paused stepping / diff sweeps), else live time."
-	| b cx cy hw hh r cr inset hourLen face white gray dim orange numFont ps now secf capR numInset cornerPull |
+	"Apple-style clock FACE: squircle body, minute/hour ticks, and the twelve numerals.
+	The moving hands live in the ClockHands submorph."
+	| b cx cy hw hh r cr inset hourLen face white gray dim orange numFont ps numInset cornerPull |
 	b := self localBounds.
 	cx := b center x.
 	cy := b center y.
@@ -3047,7 +3096,7 @@ drawHandOn: aCanvas angle: degClockwise length: len tail: tailLen width: w color
 	aCanvas fillColor: c do: [aCanvas circleCenter: tip radius: rad].
 	aCanvas fillColor: c do: [aCanvas circleCenter: tl radius: rad]! !
 
-!ClockHands methodsFor: 'drawing' stamp: ''!
+!ClockHands methodsFor: 'drawing' stamp: 'ML 3/Jul/2026 15:40:04'!
 drawOn: aCanvas
 	"The moving clock hands + centre cap (reads the live time). A submorph of AnalogClock (the static face);
 	 a separate morph so the unchanging face and the moving hands are a clean, independent composition."
@@ -3055,7 +3104,7 @@ drawOn: aCanvas
 	b := self localBounds. cx := b center x. cy := b center y. hw := b width / 2.0. hh := b height / 2.0. r := hw min: hh.
 	white := Color r: 0.96 g: 0.96 b: 0.97. orange := Color r: 1.0 g: 0.58 b: 0.0.
 	now := DateAndTime now.
-	secf := self valueOfProperty: #secOverride ifAbsent: [now second + (now nanoSecond / 1000000000.0)].
+	secf := now second + (now nanoSecond / 1000000000.0).
 	self drawHandOn: aCanvas angle: (((now hour \\ 12) + (now minute / 60.0)) * 30) length: r * 0.48 tail: r * 0.12 width: (r * 0.06) color: white center: cx@cy.
 	self drawHandOn: aCanvas angle: ((now minute + (secf / 60.0)) * 6) length: r * 0.7 tail: r * 0.14 width: (r * 0.045) color: white center: cx@cy.
 	self drawHandOn: aCanvas angle: (secf * 6) length: r * 0.78 tail: r * 0.2 width: (r * 0.014) color: orange center: cx@cy.
@@ -4474,24 +4523,22 @@ cardFor: aSpace
 	"The card rendering aSpace, or nil."
 	^ self submorphs detect: [:m | (m isKindOf: SpaceCard) and: [m space == aSpace]] ifNone: [nil]! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 3/Jul/2026 14:41:44'!
 connectStage
-	"Register this dock as the Stage's view (idempotent via the #stageConnected property): switches fly
-	through performSwitch:, space changes reshape the cards, and the dock reserves its screen-edge strip
-	so the arena excludes it. The overview listens for its own events -- this just wires it up alongside
-	(see StageOverview>>connectStage). On #settled (shown has caught up to active) redraw every card, so
-	the accent frame lands on the newly-shown space ONLY -- covers switching away from an empty space,
-	whose card performSwitch: does not otherwise repaint. redrawNeeded defers the actual draw to the next
-	cycle, by which point the Stage mode has left #switching, so each card's dynamic isActive is correct."
-	(self valueOfProperty: #stageConnected) == true ifTrue: [^ self].
-	self setProperty: #stageConnected toValue: true.
+	"Register this dock as the Stage's view: switches fly through performSwitch:, space
+	changes reshape the cards, #settled repaints every card so the accent frame lands on
+	the newly-shown space only. Subscribed under the #dock key, so a recreated dock
+	REPLACES its predecessor's subscription (no property guard needed -- keyed
+	subscription is idempotent by construction). Also reserves the dock's screen-edge
+	strip and wires up the overview alongside."
 	Stage default reserve: self.
 	StageOverview default connectStage.
 	Stage default onChange: [:evt :arg |
 		evt == #switch ifTrue: [self performSwitch: arg].
 		evt == #spaces ifTrue: [self syncCards].
 		evt == #settled ifTrue: [
-			self submorphs do: [:m | (m isKindOf: SpaceCard) ifTrue: [m redrawNeeded]]]]! !
+			self submorphs do: [:m | (m isKindOf: SpaceCard) ifTrue: [m redrawNeeded]]]]
+		for: #dock! !
 
 !Dock methodsFor: 'stage choreography' stamp: ''!
 performSwitch: aSpace
@@ -5005,14 +5052,18 @@ morphExtent: anExtent
 	w := anExtent x.
 	super morphExtent: w @ (w * sx y / sx x)! !
 
-!SpaceCard methodsFor: 'stepping' stamp: ''!
+!SpaceCard methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 15:46:10'!
 step
-	"Active card only: reconcile one live proxy mini-morph per desktop window (synced to its centre,
+	"World-cycle heartbeat first: the active card steps every cycle, making this the one
+	driver guaranteed to run after startup -- it lets the Animator reclaim frame alarms
+	lost to the startup era-shift or a replaced world (see Animator>>ensureTicking).
+	Then, active card only: reconcile one live proxy mini-morph per desktop window (synced to its centre,
 	flat extent, rotation and colour), drop proxies for windows that vanished, and match the minimap
 	z-order to the desktop z-order (front-to-back). A window with no bounds yet is skipped by
 	syncProxy: and has no proxy, so it is rejected from the z-order list too. Pure render: membership
 	and emptiness live in the Stage (event-driven), not in this poll."
 	| wins ordered |
+	Animator default ensureTicking.
 	self isActive ifFalse: [^ self].
 	wins := self desktopMorphs.
 	self proxies do: [:p | (wins includes: p window) ifFalse: [p delete]].
@@ -5797,6 +5848,20 @@ naturalLayoutFor: morphs in: area spacing: spacing accuracy: accuracy
 			extent: r extent * fitScale)].
 	^ targets! !
 
+!StageOverview methodsFor: 'public' stamp: 'ML 3/Jul/2026 14:41:24'!
+connectStage
+	"Listen to the Stage for window membership: #managed -> join the grid, #forgotten ->
+	leave it, #moved -> join or leave depending on whether the window landed on the shown
+	space (windowMoved:). isSettled gates all three -- the join/leave choreography only
+	makes sense on a settled grid. Subscribed under the #overview key: idempotent, and a
+	recreated overview replaces its predecessor. (The dock listens separately for
+	switches -- see Dock>>connectStage, which wires this up at install time.)"
+	Stage default onChange: [:evt :arg |
+		evt == #managed ifTrue: [self isSettled ifTrue: [self joinFromOpening: arg]].
+		evt == #forgotten ifTrue: [self isSettled ifTrue: [self leaveWindow: arg]].
+		evt == #moved ifTrue: [self isSettled ifTrue: [self windowMoved: arg]]]
+		for: #overview! !
+
 !StageOverview methodsFor: 'public' stamp: ''!
 enter
 	"Tile every managed desktop window into a grid in the arena (which already excludes the dock).
@@ -5957,20 +6022,6 @@ homeLocationOf: aWindow
 	mid-overview sees the shrunk tile. Answers that stashed real location, or nil when the overview is not holding
 	this window (the caller then trusts the live location). originMap is empty whenever the overview is closed."
 	^ originMap at: aWindow ifAbsent: [nil]! !
-
-!StageOverview methodsFor: 'stage choreography' stamp: ''!
-connectStage
-	"Listen to the Stage for window membership (idempotent via #stageConnected): #managed -> join the grid,
-	#forgotten -> leave it, #moved -> join or leave depending on whether the window landed on the shown space
-	(windowMoved:). isSettled gates all three -- the join/leave choreography only makes sense on a settled grid.
-	(The dock listens separately for switches and space changes -- see Dock>>connectStage, which wires this up at
-	install time.)"
-	(self valueOfProperty: #stageConnected) == true ifTrue: [^ self].
-	self setProperty: #stageConnected toValue: true.
-	Stage default onChange: [:evt :arg |
-		evt == #managed ifTrue: [self isSettled ifTrue: [self joinFromOpening: arg]].
-		evt == #forgotten ifTrue: [self isSettled ifTrue: [self leaveWindow: arg]].
-		evt == #moved ifTrue: [self isSettled ifTrue: [self windowMoved: arg]]]! !
 
 !StageOverview methodsFor: 'stage choreography' stamp: ''!
 windowMoved: aWindow
@@ -6422,18 +6473,18 @@ keyStroke: aKeyboardEvent
 		changedAction valueWithPossibleArgument: self contents]
 ! !
 
-!SearchField methodsFor: 'accessing' stamp: ''!
+!SearchField methodsFor: 'accessing' stamp: 'ML 3/Jul/2026 15:39:41'!
 placeholder: aString
-	"Hint text shown when the field is empty. Drawn in placeholderColor."
+	"Hint text shown when the field is empty. Drawn in a dim theme ink (see drawOn:)."
 	placeholder := aString.
 	self redrawNeeded
 ! !
 
-!SearchField methodsFor: 'drawing' stamp: ''!
+!SearchField methodsFor: 'drawing' stamp: 'ML 3/Jul/2026 15:39:41'!
 drawOn: aCanvas
 	"Same as EntryFieldMorph>>drawOn:, plus draw placeholder text when empty
 	(regardless of focus — matches macOS/web convention)."
-	| delta f phColor |
+	| delta f |
 	aCanvas
 		fillRectangle: self localBounds
 		color: backgroundColor
@@ -6449,12 +6500,11 @@ drawOn: aCanvas
 	contents isEmpty
 		ifTrue: [
 			placeholder ifNotNil: [
-				phColor := placeholderColor ifNil: [Theme current text alpha: 0.4].
 				aCanvas
 					drawString: placeholder
 					at: self textOffset + delta
 					font: f
-					color: phColor]]
+					color: (Theme current text alpha: 0.4)]]
 		ifFalse: [
 			aCanvas
 				drawString: contents
@@ -7068,6 +7118,11 @@ windowHighlight
 	halo title pill. Stronger than #chromeHighlight because it sits on a light body."
 	^ Color white alpha: 0.5! !
 
+!Theme class methodsFor: '*Blueprint' stamp: 'ML 3/Jul/2026 16:09:41'!
+fitDisplay
+	"Hook: the display geometry changed (see WorldMorph>>restoreDisplay). Themes
+	with desktop furniture refit it here. Default: nothing to refit."! !
+
 !Morph methodsFor: '*Blueprint' stamp: ''!
 addHalo: aMorphicEventOrNil
 	"Summon the halo. For the Blueprint halo, also give it keyboard focus so
@@ -7377,7 +7432,7 @@ cmdSignSubmorph: aMorphOrNil
 contents: aString
 	^ self contentsWithMarkers: aString inverse: false! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 3/Jul/2026 15:39:18'!
 contentsWithMarkers: aString inverse: invertMarkers
 	"Parse a leading <on>/<off>/<yes>/<no> marker. When present, remember the
 	full string in contentString (so a toggle can re-render) and stash the
@@ -7402,6 +7457,13 @@ contentsWithMarkers: aString inverse: invertMarkers
 	(display size >= 3 and: [
 		(display at: display size) == $) and: [
 		(display at: display size - 2) == $( ]]) ifTrue: [ | cut |
+			"The stripped character IS the shortcut: menus built outside the spec system
+			(plain add:action: with 'copy to clipboard (c)'-style labels) carry their
+			binding only in this suffix, so donate it as the item's hint -- otherwise
+			stripping would erase their shortcut indication entirely. The spec path sets
+			#shortcutHint afterwards and simply overwrites this with the same character."
+			(self valueOfProperty: #shortcutHint) isNil ifTrue: [
+				self setProperty: #shortcutHint toValue: (display at: display size - 1)].
 			cut := display size - 3.
 			[cut >= 1 and: [(display at: cut) == $ ]] whileTrue: [cut := cut - 1].
 			display := display copyFrom: 1 to: cut].
@@ -8342,7 +8404,7 @@ extentChanged: oldExtent
 	taskbar ifNotNil: [ taskbar screenSizeChanged ].
 	[Theme current class startUp: false] on: Error do: [:ex | ]! !
 
-!WorldMorph methodsFor: '*Blueprint' stamp: ''!
+!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 3/Jul/2026 16:09:41'!
 restoreDisplay
 	"Scale-aware: world extent is in LOCAL coords, so with a world scale !!= 1 the local frame
 	must be Display extent / scale to fill the screen once the world transform scales it.
@@ -8350,7 +8412,21 @@ restoreDisplay
 	self morphExtent: (Display extent / self scale) ceiling.
 	activeHand visible: true.
 	self fullRepaintNeeded.
-	[Theme current class startUp: false] on: Error do: [:ex | ]! !
+	Theme current class fitDisplay! !
+
+!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 3/Jul/2026 16:36:57'!
+showTaskbar
+	"Blueprint: build the CURRENT THEME's taskbar, not unconditionally a stock row.
+	Upstream rebuilds the desktop through here -- notably the recreateDefaultDesktop
+	block a released image carries in its saved deferred queue and runs on first boot,
+	AFTER any -r install has activated Blueprint. Without this override, that rebuild
+	replaces the Dock with a plain TaskbarMorph."
+	taskbar ifNil: [
+		(Theme current isKindOf: BlueprintTheme)
+			ifTrue: [BlueprintTheme installDockIn: self]
+			ifFalse: [
+				taskbar := TaskbarMorph newRow.
+				self addMorph: taskbar]]! !
 
 !WorldMorph methodsFor: '*Blueprint' stamp: ''!
 worldMenuSpec
