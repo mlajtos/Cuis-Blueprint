@@ -1,6 +1,6 @@
-'From Cuis7.9 [latest update: #7983] on 3 July 2026 at 10:50:44 am'!
+'From Cuis7.9 [latest update: #7983] on 3 July 2026 at 2:01:10 pm'!
 'Description '!
-!provides: 'Blueprint' 1 277!
+!provides: 'Blueprint' 1 281!
 !requires: 'WebClient' 1 nil 1!
 SystemOrganization addCategory: #Blueprint!
 SystemOrganization addCategory: #'Blueprint-StateMachine'!
@@ -41,7 +41,7 @@ Animation class
 
 !classDefinition: #Animator category: #Blueprint!
 Object subclass: #Animator
-	instanceVariableNames: 'animations armed'
+	instanceVariableNames: 'animations armedWorld armedAtMs'
 	classVariableNames: 'Default'
 	poolDictionaries: ''
 	category: 'Blueprint'!
@@ -491,11 +491,12 @@ tickAt: nowMs
 on: aMorph do: aBlock duration: ms easing: anEasingBlock onDone: aDoneBlock
 	^ self new setMorph: aMorph block: aBlock duration: ms easing: anEasingBlock onDone: aDoneBlock! !
 
-!Animator methodsFor: 'initialization' stamp: ''!
+!Animator methodsFor: 'initialization' stamp: 'ML 3/Jul/2026 13:57:27'!
 initialize
 	super initialize.
 	animations := OrderedCollection new.
-	armed := false! !
+	armedWorld := nil.
+	armedAtMs := nil! !
 
 !Animator methodsFor: 'accessing' stamp: ''!
 animations
@@ -535,22 +536,44 @@ animateMorph: aMorph using: aBlock duration: ms onDone: doneBlock
 	"Convenience matching the old Dock signature; defaults to cubic ease-in-out."
 	^ self animate: aMorph using: aBlock duration: ms easing: #cubicInOut onDone: doneBlock! !
 
-!Animator methodsFor: 'stepping' stamp: ''!
-scheduleNextFrame
-	"Arm a one-shot World alarm for the next frame, unless one is already pending. Must use
-	Time localMillisecondClock -- the same clock the World cycle and MorphicAlarm use; the
-	other clock (millisecondClockValue) is a different epoch and breaks alarm timing."
-	armed ifTrue: [^ self].
-	self world ifNotNil: [:w |
-		w addAlarm: #stepAnimationsAt: withArguments: #() for: self at: Time localMillisecondClock + self class frameMs.
-		armed := true]! !
+!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 14:00:52'!
+rearm
+	"Drop any pending alarm and re-arm freshly on the current world (no-op without
+	pending animations). For moments when a previously-scheduled alarm cannot be
+	trusted at all -- notably right after image/world startup, where the world's first
+	cycle era-shifts every alarm scheduled before it (WorldMorph>>adjustAlarmTimes:).
+	Unlike scheduleNextFrame's watchdog, this does not wait out the trust window."
+	armedWorld ifNotNil: [:w | w removeAlarm: #stepAnimationsAt: for: self].
+	armedWorld := nil.
+	armedAtMs := nil.
+	animations isEmpty ifFalse: [self scheduleNextFrame]! !
 
-!Animator methodsFor: 'stepping' stamp: ''!
+!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 13:57:27'!
+scheduleNextFrame
+	"Arm a one-shot World alarm for the next frame -- with a heartbeat watchdog. A
+	pending arm is trusted only if it is on the CURRENT world and recent; otherwise the
+	alarm is presumed lost and reclaimed. Alarms genuinely get lost: an arm on a world
+	that gets replaced dies with it, and an alarm scheduled before the world's first
+	cycle is era-shifted into the far future by WorldMorph>>adjustAlarmTimes: (its
+	clock-weirdness correction assumes alarms predate the boot). Without the watchdog
+	one lost alarm wedges every future animation. Must use Time localMillisecondClock --
+	the same clock the World cycle and MorphicAlarm use."
+	| w now |
+	w := self world.
+	w ifNil: [^ self].
+	now := Time localMillisecondClock.
+	(armedWorld == w and: [armedAtMs notNil and: [now - armedAtMs < 2000]]) ifTrue: [^ self].
+	armedWorld == w ifTrue: [w removeAlarm: #stepAnimationsAt: for: self].
+	w addAlarm: #stepAnimationsAt: withArguments: #() for: self at: now + self class frameMs.
+	armedWorld := w.
+	armedAtMs := now! !
+
+!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 13:51:49'!
 stepAnimationsAt: nowMs
 	"One frame (fired by the World alarm): advance every animation, fire onDone for finished
 	ones, then re-arm while any remain."
 	| finished |
-	armed := false.
+	armedWorld := nil.
 	finished := OrderedCollection new.
 	animations copy do: [:a | (a tickAt: nowMs) ifTrue: [finished add: a]].
 	finished do: [:a | animations remove: a ifAbsent: []].
@@ -1420,21 +1443,28 @@ currentTheme: aTheme
 		w fullRepaintNeeded].
 	^ aTheme! !
 
-!BlueprintTheme class methodsFor: 'activation' stamp: ''!
+!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026 14:00:52'!
 beCurrent
 	"The single, robust entry point for activating the Blueprint desktop environment:
 	 (1) ensure the Tabler icon font is downloaded, registered, and its codepoints parsed;
 	 (2) apply Blueprint's typography -- #fontPointSize logical points scaled to the display (base Cuis
 	     ships an UNSCALED default that renders tiny on HiDPI); zoom the UI with #fontPointSize:; and
-	 (3) apply the theme + window chrome + Dock + Stage (inherited beCurrent -> currentTheme:).
-	Steps 2-3 touch the UI and need UISupervisor runningWorld, which is nil outside the UI process: when
+	 (3) apply the theme + window chrome + Dock + Stage (inherited beCurrent -> currentTheme:); then
+	 (4) nudge the Animator: activation during startup can leave animations armed on a lost alarm
+	     (see Animator>>scheduleNextFrame) -- the nudge lets its watchdog reclaim and the pending
+	     card/tile animations complete.
+	Steps 2-4 touch the UI and need UISupervisor runningWorld, which is nil outside the UI process: when
 	called from a non-UI context (startup -r, a script, a bridge eval) they are deferred via
 	whenUIinSafeState:; when already in the UI process (File List, theme picker) they run inline. Idempotent."
 	| applyLook |
 	SymbolFont codepoints.
 	applyLook := [
 		self applyTypography.
-		super beCurrent].
+		super beCurrent.
+		"Queued as a SECOND deferral: it must run a cycle later, after the world's
+		first alarm pass has done its startup era-adjustment -- an alarm armed in
+		THIS drain gets shifted into the far future by it (see Animator>>rearm)."
+		UISupervisor whenUIinSafeState: [Animator default rearm]].
 	UISupervisor runningWorld isNil
 		ifTrue: [UISupervisor whenUIinSafeState: applyLook]
 		ifFalse: [applyLook value].
@@ -6053,56 +6083,60 @@ chart: aChart
 	self redrawNeeded! !
 
 !StateMachineMorph methodsFor: 'drawing' stamp: ''!
-drawArrowheadAt: tip from: prev on: aCanvas color: c
-	| s dir |
-	s := self hostScale.
-	dir := (tip - prev) / ((tip - prev) r max: 0.001).
-	aCanvas line: tip to: (tip - ((dir rotatedBy: 0.42) * (12 * s))) width: 2.4 * s color: c.
-	aCanvas line: tip to: (tip - ((dir rotatedBy: 0.42 negated) * (12 * s))) width: 2.4 * s color: c! !
-
-!StateMachineMorph methodsFor: 'drawing' stamp: ''!
 drawBackward: ev from: bf to: bt floor: fy on: aCanvas
-	"A backward edge routed UNDER the row at floor fy: down from the source bottom, along, up into the target bottom,
-	label on the floor segment."
-	| s lc start end pts |
+	"A backward edge routed UNDER the row at floor fy: down from the source bottom,
+	along, up into the target bottom, label on the floor segment."
+	| s start end |
 	s := self hostScale.
-	lc := Theme current text alpha: 0.6.
 	start := bf center x @ bf bottom.
 	end := bt center x @ bt bottom.
-	pts := {start. start x @ fy. end x @ fy. end}.
-	1 to: pts size - 1 do: [:i | aCanvas line: (pts at: i) to: (pts at: i + 1) width: 2.4 * s color: lc].
-	self drawArrowheadAt: end from: (pts at: pts size - 1) on: aCanvas color: lc.
-	aCanvas drawString: ev asString atCenterXBaselineY: (((start x + end x) / 2) @ (fy + (12 * s))) font: self labelFont color: (Theme current text alpha: 0.9)! !
+	self drawEdge: {start. start x @ fy. end x @ fy. end}
+		label: ev labelAt: ((start x + end x) / 2) @ (fy + (12 * s)) on: aCanvas! !
 
 !StateMachineMorph methodsFor: 'drawing' stamp: ''!
 drawCeiling: ev from: bf to: bt ceil: cy on: aCanvas
-	"A skip edge routed OVER the top at ceiling cy: up from the source top, across, down into the target top."
-	| s lc start end pts |
+	"A skip edge routed OVER the top at ceiling cy: up from the source top, across,
+	down into the target top."
+	| s start end |
 	s := self hostScale.
-	lc := Theme current text alpha: 0.6.
 	start := bf center x @ bf top.
 	end := bt center x @ bt top.
-	pts := {start. start x @ cy. end x @ cy. end}.
-	1 to: pts size - 1 do: [:i | aCanvas line: (pts at: i) to: (pts at: i + 1) width: 2.4 * s color: lc].
-	self drawArrowheadAt: end from: (pts at: pts size - 1) on: aCanvas color: lc.
-	aCanvas drawString: ev asString atCenterXBaselineY: (((start x + end x) / 2) @ (cy - (5 * s))) font: self labelFont color: (Theme current text alpha: 0.9)! !
+	self drawEdge: {start. start x @ cy. end x @ cy. end}
+		label: ev labelAt: ((start x + end x) / 2) @ (cy - (5 * s)) on: aCanvas! !
+
+!StateMachineMorph methodsFor: 'drawing' stamp: ''!
+drawEdge: pts label: ev labelAt: labelPt on: aCanvas
+	"One ink pass for the WHOLE edge: the polyline shaft and the arrowhead V as
+	subpaths of a single stroked path, so overlaps -- joints, and the barbs meeting
+	the shaft at the tip -- get uniform coverage instead of stacked alpha (the
+	translucent ink would otherwise darken into patches). Then the event label."
+	| s lc tip prev dir |
+	s := self hostScale.
+	lc := Theme current text alpha: 0.6.
+	tip := pts last.
+	prev := pts at: pts size - 1.
+	dir := (tip - prev) / ((tip - prev) r max: 0.001).
+	aCanvas strokeWidth: 2.4 * s color: lc do: [
+		aCanvas moveTo: pts first.
+		2 to: pts size do: [:i | aCanvas lineTo: (pts at: i)].
+		aCanvas moveTo: tip - ((dir rotatedBy: 0.42) * (12 * s)).
+		aCanvas lineTo: tip.
+		aCanvas lineTo: tip - ((dir rotatedBy: 0.42 negated) * (12 * s))].
+	aCanvas drawString: ev asString atCenterXBaselineY: labelPt
+		font: self labelFont color: (Theme current text alpha: 0.9)! !
 
 !StateMachineMorph methodsFor: 'drawing' stamp: ''!
 drawForward: ev from: bf to: bt on: aCanvas
-	"A forward edge: exit the source's right side, enter the target's left side, orthogonal jog if the rows differ,
-	event label above the mid."
-	| s lc start end pts labelPt |
+	"A forward edge: exit the source's right side, enter the target's left side,
+	orthogonal jog if the rows differ, event label above the mid."
+	| s start end pts |
 	s := self hostScale.
-	lc := Theme current text alpha: 0.6.
 	start := bf right @ bf center y.
 	end := bt left @ bt center y.
 	pts := start y = end y
 		ifTrue: [{start. end}]
 		ifFalse: [ | mx | mx := ((start x + end x) / 2) max: (start x + (18 * s)). {start. mx @ start y. mx @ end y. end}].
-	1 to: pts size - 1 do: [:i | aCanvas line: (pts at: i) to: (pts at: i + 1) width: 2.4 * s color: lc].
-	self drawArrowheadAt: end from: (pts at: pts size - 1) on: aCanvas color: lc.
-	labelPt := ((start + end) / 2) - (0 @ (11 * s)).
-	aCanvas drawString: ev asString atCenterXBaselineY: labelPt font: self labelFont color: (Theme current text alpha: 0.9)! !
+	self drawEdge: pts label: ev labelAt: ((start + end) / 2) - (0 @ (11 * s)) on: aCanvas! !
 
 !StateMachineMorph methodsFor: 'drawing' stamp: ''!
 drawOn: aCanvas
