@@ -1,6 +1,6 @@
-'From Cuis7.9 [latest update: #7983] on 2 July 2026 at 6:24:34 pm'!
+'From Cuis7.9 [latest update: #7983] on 3 July 2026 at 10:50:44 am'!
 'Description '!
-!provides: 'Blueprint' 1 269!
+!provides: 'Blueprint' 1 277!
 !requires: 'WebClient' 1 nil 1!
 SystemOrganization addCategory: #Blueprint!
 SystemOrganization addCategory: #'Blueprint-StateMachine'!
@@ -102,7 +102,7 @@ StateMachine class
 !classDefinition: #BlueprintTheme category: #Blueprint!
 Theme subclass: #BlueprintTheme
 	instanceVariableNames: ''
-	classVariableNames: 'FontPointSize Tile'
+	classVariableNames: 'FontCache FontPointSize Tile'
 	poolDictionaries: ''
 	category: 'Blueprint'!
 !classDefinition: 'BlueprintTheme class' category: #Blueprint!
@@ -187,6 +187,16 @@ ColoredBoxMorph subclass: #ClockHands
 	category: 'Blueprint'!
 !classDefinition: 'ClockHands class' category: #Blueprint!
 ClockHands class
+	instanceVariableNames: ''!
+
+!classDefinition: #MenuTitleMorph category: #Blueprint!
+ColoredBoxMorph subclass: #MenuTitleMorph
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Blueprint'!
+!classDefinition: 'MenuTitleMorph class' category: #Blueprint!
+MenuTitleMorph class
 	instanceVariableNames: ''!
 
 !classDefinition: #SearchBar category: #Blueprint!
@@ -302,7 +312,7 @@ SearchField class
 !classDefinition: #SymbolMorph category: #Blueprint!
 LabelMorph subclass: #SymbolMorph
 	instanceVariableNames: 'symbolName'
-	classVariableNames: ''
+	classVariableNames: 'OpticalCache'
 	poolDictionaries: ''
 	category: 'Blueprint'!
 !classDefinition: 'SymbolMorph class' category: #Blueprint!
@@ -397,6 +407,9 @@ The catalog's "how big is a cell" swatch: a rounded outline square that tracks t
 
 !ClockHands commentStamp: '<historical>' prior: 0!
 The moving parts of AnalogClock: hour/minute/second hands stepped once a second, drawn as rounded strokes with the second hand in accent orange. Split from the face so per-second damage is just the hands region.!
+
+!MenuTitleMorph commentStamp: '<historical>' prior: 0!
+The header block of a Blueprint menu: holds the bold title lines that MenuMorph>>addTitle: builds (question menus, informUserDuring: progress). Exists mainly to report its true size to the menu layout -- MenuMorph>>adjustSubmorphsLayout sizes rows from minimumExtent, and a plain box under-reports.!
 
 !SearchBar commentStamp: '<historical>' prior: 0!
 A search input as one piece of chrome: magnifier glyph + borderless SearchField + clear button in a translucent capsule that strokes accent on focus. Metric ivars are physical px (set once in initialize). changedAction: fires per keystroke -- SymbolCatalog filters live from it.!
@@ -665,9 +678,14 @@ fontDescriptionPointSize: pointSize
 
 !SymbolFont class methodsFor: 'font data' stamp: ''!
 codepoints
-	"Ensure the font assets are present, then parse the CSS once and cache the name -> codepoint map."
-	self ensureFontData.
-	^ Codepoints ifNil: [Codepoints := self loadFromCss: self cssFile]! !
+	"The name -> codepoint map, parsed once from the Tabler CSS and cached. The
+	download/registration dance (ensureFontData -- which stats files on disk) runs
+	only on the first access, NOT per lookup: glyph-heavy paths like menu building
+	ask for codepoints many times per frame."
+	Codepoints ifNil: [
+		self ensureFontData.
+		Codepoints := self loadFromCss: self cssFile].
+	^ Codepoints! !
 
 !SymbolFont class methodsFor: 'font data' stamp: ''!
 cssFile
@@ -1323,6 +1341,17 @@ workspace
 	^ self useUniformColors
 		ifTrue: [self defaultWindowColor]
 		ifFalse: [Color h: 75 s: 0.35 v: 0.55]! !
+
+!BlueprintTheme methodsFor: 'typography' stamp: ''!
+fontAt: step
+	"Cached type-scale lookup: glyph-heavy paths (menu building) ask for fonts
+	thousands of times per frame, and the uncached computation (float pow + family
+	dictionary walk) adds up. The key carries every input -- step, rem root, display
+	scale, family -- so zoom or family changes simply miss into fresh entries."
+	| key |
+	key := { step. FontPointSize. DisplayScreen hostOSScaleFactor. FontFamily defaultFamilyName }.
+	FontCache isNil ifTrue: [FontCache := Dictionary new].
+	^ FontCache at: key ifAbsentPut: [super fontAt: step]! !
 
 !BlueprintTheme class methodsFor: 'tile' stamp: ''!
 buildTile
@@ -3019,6 +3048,34 @@ requiresVectorCanvas ^ true! !
 
 !ClockHands methodsFor: 'initialization' stamp: ''!
 initialize super initialize. self color: Color transparent! !
+
+!MenuTitleMorph methodsFor: 'geometry' stamp: ''!
+minItemWidth
+	^ self morphWidth! !
+
+!MenuTitleMorph methodsFor: 'geometry' stamp: ''!
+minimumExtent
+	"The extent addTitle: computed from the label lines -- the menu layout must
+	reserve all of it."
+	^ self morphExtent! !
+
+!MenuTitleMorph methodsFor: 'layout' stamp: ''!
+extentChanged: oldExtent
+	super extentChanged: oldExtent.
+	self rightAlignButtons! !
+
+!MenuTitleMorph methodsFor: 'layout' stamp: ''!
+rightAlignButtons
+	"Tuck any #rightAligned submorphs (the pin / close glyphs) against my right edge,
+	rightmost first, vertically centered. Re-run whenever my extent changes -- the menu
+	layout stretches me to the menu width after addTitle: sized me naturally."
+	| s x |
+	s := DisplayScreen hostOSScaleFactor.
+	x := self morphWidth - (6 * s).
+	(submorphs select: [:m | m hasProperty: #rightAligned]) do: [:b |
+		x := x - b morphWidth.
+		b morphPosition: x @ ((self morphHeight - b morphHeight) / 2).
+		x := x - (6 * s)]! !
 
 !SearchBar methodsFor: 'initialization' stamp: ''!
 initialize
@@ -6449,10 +6506,29 @@ requiresVectorCanvas
 	^ true
 ! !
 
+!SymbolMorph methodsFor: 'geometry' stamp: ''!
+opticalBounds
+	"Ink bounds of the glyph. A SymbolMorph's ink depends only on (symbolName,
+	pointSize, extent), and menus create MANY identical glyphs (every chevron, every
+	check), so the pixel-scanning measurement (super) is cached class-side. The cache
+	is append-only and small: glyphs actually used, times a few sizes."
+	| key |
+	key := { symbolName. self pointSize. self morphExtent }.
+	OpticalCache isNil ifTrue: [OpticalCache := Dictionary new].
+	^ OpticalCache at: key ifAbsentPut: [super opticalBounds]! !
+
 !SymbolButton methodsFor: 'accessing' stamp: ''!
 clickAction: aBlock
 	"Block to fire on left-click. Zero-arg."
 	clickAction := aBlock! !
+
+!SymbolButton methodsFor: 'accessing' stamp: ''!
+idleColor: aColor
+	"Set the resting color. Use this (not color:) for state changes on hoverable
+	buttons: if a hover brighten is in flight, mouseLeave: restores to the stash --
+	writing both keeps a mid-hover state change from being undone on leave."
+	self setProperty: #idleColor toValue: aColor.
+	self color: aColor! !
 
 !SymbolButton methodsFor: 'drawing' stamp: ''!
 drawOn: aCanvas
@@ -6485,8 +6561,29 @@ handlesMouseDown: anEvent
 ! !
 
 !SymbolButton methodsFor: 'events' stamp: ''!
+handlesMouseOver: anEvent
+	^ true! !
+
+!SymbolButton methodsFor: 'events' stamp: ''!
 mouseButton1Down: anEvent localPosition: aPoint
 	clickAction ifNotNil: [clickAction value]! !
+
+!SymbolButton methodsFor: 'events' stamp: ''!
+mouseEnter: anEvent
+	"Brighten while hovered: raise the alpha over the resting color (stashed for
+	mouseLeave:). Opaque colors (e.g. the pinned accent) stay as they are."
+	| c |
+	(self valueOfProperty: #idleColor) isNil ifTrue: [
+		self setProperty: #idleColor toValue: color].
+	c := self valueOfProperty: #idleColor.
+	self color: (c alpha: ((c alpha + 0.45) min: 1)).
+	self redrawNeeded! !
+
+!SymbolButton methodsFor: 'events' stamp: ''!
+mouseLeave: anEvent
+	(self valueOfProperty: #idleColor) ifNotNil: [:c |
+		self color: c.
+		self redrawNeeded]! !
 
 !FillWidthScrollPane methodsFor: 'layout' stamp: ''!
 extentChanged: oldExtent
@@ -6958,6 +7055,50 @@ addHalo: aMorphicEventOrNil
 ! !
 
 !Morph methodsFor: '*Blueprint' stamp: ''!
+addItemTo: topMenu fromSpec: itemSpec submenus: submenusDictionary
+	"
+	See coment at Morph >> #getMenu
+	"
+	| submenuId menu label target selector arguments iconSymbol helpText menuItem |
+	label := itemSpec second.
+	label ifNil: [ ^self ]. "Only a keyboard shortcut, not a real menu item."
+	submenuId := itemSpec first // 1000.
+	menu := submenuId = 0 ifTrue: [ topMenu ] ifFalse: [ submenusDictionary at: submenuId ifAbsent: [^self]].
+	target := itemSpec fourth
+		ifNotNil: [ :targetOrGetter |
+			targetOrGetter isSymbol
+				ifTrue: [ 	self perform: targetOrGetter ]
+				ifFalse: [ targetOrGetter ]]
+		ifNil: [ self ].
+	selector := itemSpec fifth.
+	arguments := (selector isNil or: [ selector numArgs = 0 ])
+		ifTrue: [#()]
+		ifFalse: [itemSpec size >= 8 ifTrue: [ {itemSpec eighth} ] ifFalse: [ {self} ]].
+	menuItem := label isSymbol
+		ifTrue: [ menu addUpdating: label target: target action: selector argumentList: arguments ]
+		ifFalse: [ menu add: label target: target action: selector argumentList: arguments ].
+	"Blueprint: carry the spec's shortcut character onto the item so the menu can
+	render a right-aligned hint. The label keeps any legacy '(x)' suffix for now."
+	itemSpec third ifNotNil: [ :shortcutChar |
+		menuItem setProperty: #shortcutHint toValue: shortcutChar.
+		menuItem rebuildHint.
+		menuItem updateColors ].
+	iconSymbol := itemSpec size >= 6 ifTrue: [ itemSpec sixth ].
+	iconSymbol ifNotNil: [ menuItem setIcon: iconSymbol ].
+	helpText := itemSpec size >= 7 ifTrue: [ itemSpec seventh ].
+	helpText ifNotNil: [ menuItem setBalloonText: helpText ].
+	
+	selector
+		 ifNil: [
+			menuItem isEnabled: false ]
+		ifNotNil: [
+			| enabledSelector |
+			enabledSelector := itemSpec size >= 9 ifTrue: [ itemSpec ninth ].
+			enabledSelector ifNotNil: [ 
+				menuItem isEnabled: (target perform: enabledSelector) ]].
+! !
+
+!Morph methodsFor: '*Blueprint' stamp: ''!
 collapse
 	"Blueprint: minimize self into the dock (the world taskbar) if it is a top-level world submorph
 	with a measurable size (via fullBoundsInOwner, so vector morphs with nil morphExtent still dock);
@@ -7043,26 +7184,60 @@ collapse
 	#collapse rather than relying on a hardcoded exclusion list."! !
 
 !MenuMorph methodsFor: '*Blueprint' stamp: ''!
+addStayUpIcons
+	"Blueprint: quiet glyph controls in the title row instead of the base button strip --
+	a close cross (rightmost) and a pin that keeps the menu up, turning accent when
+	pinned (see removeStayUpBox / togglePin). Same contract as the base: needs a
+	titleMorph; when there is none yet, flag ourselves so addTitle: calls back."
+	| s pinB closeB |
+	(Preferences at: #optionalButtons) ifFalse: [^ self].
+	(self valueOfProperty: #hasStayUpIcons ifAbsent: [false]) ifTrue: [
+		self removeProperty: #needsStayUpIcons.
+		^ self].
+	titleMorph ifNil: [
+		self setProperty: #needsStayUpIcons toValue: true.
+		^ self].
+	s := DisplayScreen hostOSScaleFactor.
+	closeB := self titleControl: #x action: [self delete].
+	pinB := self titleControl: #pin action: [self togglePin].
+	self setProperty: #pinButton toValue: pinB.
+	titleMorph addMorphBack: closeB.
+	titleMorph addMorphBack: pinB.
+	titleMorph morphExtent: titleMorph morphExtent + (((closeB morphWidth + pinB morphWidth) + (18 * s)) @ 0).
+	titleMorph rightAlignButtons.
+	self setProperty: #hasStayUpIcons toValue: true.
+	self removeProperty: #needsStayUpIcons! !
+
+!MenuMorph methodsFor: '*Blueprint' stamp: ''!
 addTitle: aString
-	"Blueprint: suppress the visible title bar on user-titled menus, but for blank
-	titles (the form 'Utilities>>informUserDuring:' uses for progress dialogs â
-	it passes a whitespace string, not an empty one) still build a minimal
-	titleMorph so 'MenuMorph>>informUserAt:during:' works."
-
-	| label container font pp |
-	(aString allSatisfy: [:c | c isSeparator]) ifFalse: [^ self].
-
-	font := Preferences at: #standardMenuFont.
-	label := LabelMorph new
-		contents: '';
-		font: font bold.
-	pp := (8 @ 2) * self hostScale.
-	container := ColoredBoxMorph new lock.
-	container color: Theme current menuTitleBar.
-	container addMorphBack: label position: pp.
-	container morphExtent: (label morphWidth + (16 * self hostScale)) @ (pp y + label morphHeight + (2 * self hostScale)).
+	"A quiet header inside the dark chrome -- Cuis uses menu titles to ask the user
+	questions ('Select a theme...') and to show progress (informUserDuring:, which
+	passes a whitespace title and then rewrites the first label in place). Bold
+	white lines in the menu font, aligned with the item text; no separate colored
+	strip -- the chrome itself is the surface."
+	| container pp s font |
+	s := DisplayScreen hostOSScaleFactor.
+	font := (Theme current fontAt: -1) bold.
+	container := MenuTitleMorph new.
+	"NOT locked: the pin/close glyph buttons live inside and must receive clicks;
+	the labels are locked individually instead."
+	container color: Color transparent.
+	pp := (8 * s) @ (4 * s).
+	aString asPlainString linesDo: [:line | | label |
+		label := LabelMorph new
+			contents: line;
+			font: font;
+			color: (Color white alpha: 0.95);
+			yourself.
+		label lock.
+		container addMorphBack: label position: pp.
+		pp := pp + (0 @ (label morphHeight + (2 * s)))].
+	container morphExtent:
+		((container submorphs inject: 0 into: [:prev :each | prev max: each morphWidth]) + (16 * s))
+			@ (pp y + (2 * s)).
 	titleMorph := container.
-	self addMorphFront: titleMorph! !
+	self addMorphFront: titleMorph.
+	(self hasProperty: #needsStayUpIcons) ifTrue: [self addStayUpIcons]! !
 
 !MenuMorph methodsFor: '*Blueprint' stamp: ''!
 adjustSubmorphsLayout
@@ -7103,8 +7278,47 @@ postDrawOn: aCanvas
 	^ true! !
 
 !MenuMorph methodsFor: '*Blueprint' stamp: ''!
+removeStayUpBox
+	"Blueprint: called by stayUp: when the menu becomes pinned. Keep both controls -- a
+	pinned menu still wants its close cross -- and flip the pin to its accent 'pinned'
+	state as feedback (togglePin reads #pinnedState to unpin)."
+	self setProperty: #pinnedState toValue: true.
+	(self valueOfProperty: #pinButton) ifNotNil: [:b |
+		b symbolName: #pinned.
+		b idleColor: Theme current accentColor.
+		b redrawNeeded]! !
+
+!MenuMorph methodsFor: '*Blueprint' stamp: ''!
 requiresVectorCanvas
 	^ true! !
+
+!MenuMorph methodsFor: '*Blueprint' stamp: ''!
+titleControl: glyphSymbol action: aBlock
+	"A quiet glyph control for the title row: dim white at rest, hover-brightened
+	(SymbolButton), right-aligned by the MenuTitleMorph."
+	| b |
+	b := SymbolButton new.
+	b symbolName: glyphSymbol.
+	b pointSize: (Theme current fontAt: -1) pointSize.
+	b idleColor: (Color white alpha: 0.4).
+	b clickAction: aBlock.
+	b setProperty: #rightAligned toValue: true.
+	^ b! !
+
+!MenuMorph methodsFor: '*Blueprint' stamp: ''!
+togglePin
+	"Pin the menu open, or let it go again. Pinning goes through the base stayUp
+	contract (stayUp: true calls removeStayUpBox, which flips the glyph to its accent
+	state and records #pinnedState); unpinning reverses both."
+	(self valueOfProperty: #pinnedState ifAbsent: [false])
+		ifTrue: [
+			self setProperty: #pinnedState toValue: false.
+			self stayUp: false.
+			(self valueOfProperty: #pinButton) ifNotNil: [:b |
+				b symbolName: #pin.
+				b idleColor: (Color white alpha: 0.4).
+				b redrawNeeded]]
+		ifFalse: [self stayUp]! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 chevronSubmorph
@@ -7113,6 +7327,17 @@ chevronSubmorph
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 chevronSubmorph: aMorphOrNil
 	self setProperty: #chevronMorph toValue: aMorphOrNil! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+cmdSignSubmorph
+	"The command-sign part of the shortcut hint, held as a morph PROPERTY (not an ivar)
+	so this package adds no instance variables to the base MenuItemMorph. Separate from
+	the key label so both edges of the hint column can align across items."
+	^ self valueOfProperty: #cmdSignMorph! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+cmdSignSubmorph: aMorphOrNil
+	self setProperty: #cmdSignMorph toValue: aMorphOrNil! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 contents: aString
@@ -7137,6 +7362,15 @@ contentsWithMarkers: aString inverse: invertMarkers
 				contentString := aString.
 				checkOn := (marker = '<on>' or: [marker = '<yes>']) xor: invertMarkers.
 				display := aString copyFrom: markerIndex + 1 to: aString size]]].
+	"Strip a legacy trailing shortcut suffix -- space + '(x)' with a single character --
+	from the DISPLAY string only: the right-aligned hint column shows the binding now.
+	The defining spec/label (and contentString for check toggles) stay untouched."
+	(display size >= 3 and: [
+		(display at: display size) == $) and: [
+		(display at: display size - 2) == $( ]]) ifTrue: [ | cut |
+			cut := display size - 3.
+			[cut >= 1 and: [(display at: cut) == $ ]] whileTrue: [cut := cut - 1].
+			display := display copyFrom: 1 to: cut].
 	super contents: display.
 	self setProperty: #checkState toValue: checkOn.
 	self rebuildContent! !
@@ -7158,6 +7392,10 @@ drawOn: aCanvas
 				rx: 8 * s ry: 8 * s]]! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+dropIconSubmorph
+	self iconSubmorph ifNotNil: [:m | m delete. self iconSubmorph: nil]! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 extentChanged: oldExtent
 	"Reposition content submorphs whenever the menu resizes us to the column
 	width."
@@ -7177,6 +7415,24 @@ hasMarker
 	property (an <on>/<off>/<yes>/<no> state in the label). Submorph count says
 	nothing here -- every item carries a label submorph."
 	^ (self valueOfProperty: #checkState) notNil! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+hintColumnWidth
+	"Width of the shared right-hand column that holds the shortcut KEY character of
+	hint items and the CHEVRON of submenu items -- one visual track for the whole
+	menu. Sized to the widest plausible key character in our font, a constant per
+	font, so everything centered in it aligns across items."
+	^ self fontToUse widthOf: $W! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+hintSubmorph
+	"The right-aligned keyboard-shortcut hint submorph, held as a morph PROPERTY (not an
+	ivar) so this package adds no instance variables to the base MenuItemMorph."
+	^ self valueOfProperty: #hintMorph! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+hintSubmorph: aMorphOrNil
+	self setProperty: #hintMorph toValue: aMorphOrNil! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 iconFormScaled
@@ -7247,12 +7503,14 @@ labelSubmorph: aMorphOrNil
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 layoutSubmorphs
 	"Position content submorphs in a row, each vertically centered in the item:
-	  padH | iconSlot(icon centered) | gap | label | flexible space | chevron | padH.
-	The icon slot and its gap are reserved only when some item in this menu has an
-	icon (#reservesIconColumn); a fully icon-less menu loses the leading gutter.
-	The chevron is right-aligned by its glyph INK (opticalBounds), not its loose
-	font box, so its visible edge sits a true padH from the item edge."
-	| s padH iconSlotW gap rowH rowW |
+	  padH | iconSlot(icon centered) | gap | label | flex | [cmd sign][key column] | padH.
+	The icon slot and its gap are reserved only when some item in this menu shows or
+	can show an icon (#reservesIconColumn). The right-hand KEY COLUMN (hintColumnWidth)
+	is one shared track: shortcut key characters and submenu chevrons are each
+	CENTERED in it (chevrons by their glyph ink), so keys sit under keys and chevrons
+	sit in the same column. The command sign hangs just left of the column; it is the
+	same glyph everywhere, so the signs align by construction."
+	| s padH iconSlotW gap rowH rowW colW colLeft |
 	self labelSubmorph isNil ifTrue: [^ self].
 	s := DisplayScreen hostOSScaleFactor.
 	padH := 8 * s.
@@ -7266,9 +7524,19 @@ layoutSubmorphs
 			(padH + ((iconSlotW - self iconSubmorph morphWidth) / 2)) @ ((rowH - self iconSubmorph morphHeight) / 2)].
 	self labelSubmorph morphPosition:
 		(padH + iconSlotW + gap) @ ((rowH - self labelSubmorph morphHeight) / 2).
-	self chevronSubmorph ifNotNil: [
+	colW := self hintColumnWidth.
+	colLeft := rowW - padH - colW.
+	self chevronSubmorph ifNotNil: [ | ob |
+		ob := self chevronSubmorph opticalBounds.
 		self chevronSubmorph morphPosition:
-			(rowW - padH - self chevronSubmorph opticalBounds right) @ ((rowH - self chevronSubmorph morphHeight) / 2)]! !
+			(colLeft + ((colW - ob width) / 2) - ob left) @ ((rowH - self chevronSubmorph morphHeight) / 2).
+		colLeft := colLeft - (4 * s) - colW].
+	self hintSubmorph ifNotNil: [
+		self hintSubmorph morphPosition:
+			(colLeft + ((colW - self hintSubmorph morphWidth) / 2)) @ ((rowH - self hintSubmorph morphHeight) / 2).
+		self cmdSignSubmorph ifNotNil: [
+			self cmdSignSubmorph morphPosition:
+				(colLeft - (2 * s) - self cmdSignSubmorph morphWidth) @ ((rowH - self cmdSignSubmorph morphHeight) / 2)]]! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 minItemWidth
@@ -7277,73 +7545,136 @@ minItemWidth
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 minimumExtent
-	"pad + (icon slot + gap, only when some item in this menu has an icon --
-	#reservesIconColumn) + label width + pad, plus a chevron slot for submenu
-	items. The chevron keeps its own gap regardless of the icon column. Width
-	derives from the label submorph's measured width."
-	| s padH iconSlotW gap chevGap labelW chevSlot |
+	"pad + (icon slot + gap, only when some item in this menu shows or can show an
+	icon -- #reservesIconColumn) + label width + pad, plus the right-hand tracks:
+	the shared key/chevron column (hintColumnWidth), doubled with a small gap when
+	an item somehow has both, the command sign, and a wide lead gap so label and
+	hint never crowd."
+	| s padH iconSlotW gap labelW trailing colW |
 	s := DisplayScreen hostOSScaleFactor.
 	padH := 8 * s.
-	chevGap := 4 * s.
 	self reservesIconColumn
 		ifTrue: [iconSlotW := 18 * s. gap := 4 * s]
 		ifFalse: [iconSlotW := 0. gap := 0].
 	labelW := self labelSubmorph isNil ifTrue: [0] ifFalse: [self labelSubmorph morphWidth].
-	chevSlot := (self hasSubMenu and: [self chevronSubmorph notNil])
-		ifTrue: [chevGap + self chevronSubmorph morphWidth]
-		ifFalse: [0].
-	^ ((padH * 2) + iconSlotW + gap + labelW + chevSlot) @ (20 * s)! !
+	colW := self hintColumnWidth.
+	trailing := 0.
+	(self hasSubMenu and: [self chevronSubmorph notNil]) ifTrue: [
+		trailing := trailing + (4 * s) + colW].
+	self hintSubmorph ifNotNil: [ | cmdW |
+		cmdW := self cmdSignSubmorph ifNil: [0] ifNotNil: [:c | c morphWidth].
+		trailing := trailing + (16 * s) + cmdW + (2 * s) + colW].
+	^ ((padH * 2) + iconSlotW + gap + labelW + trailing) @ (20 * s)! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+mouseEnter: aMouseEnterEvent
+	"Forgiving submenu logic:
+	1. If we are inside a submenu, clear the parent menu's triangle (we've arrived).
+	2. If our own menu has an active submenu and the cursor is heading toward it,
+	   ignore — but schedule a dwell timer in case the user lingers here."
+	super mouseEnter: aMouseEnterEvent.
+	owner ifNotNil: [
+		(owner valueOfProperty: #forgiveParent) ifNotNil: [:parent | parent clearForgive].
+		(owner shouldForgiveCursorAt: aMouseEnterEvent eventPosition) ifTrue: [
+			self addAlarm: #forgiveDwellExpired after: 150.
+			^ self].
+		owner selectItem: self]! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+rebuildChevron
+	"Submenu marker: a chevron glyph, right-centered in the shared key column
+	(see layoutSubmorphs)."
+	| s |
+	self hasSubMenu ifFalse: [
+		self chevronSubmorph ifNotNil: [:m | m delete. self chevronSubmorph: nil].
+		^ self].
+	self chevronSubmorph isNil ifTrue: [
+		s := DisplayScreen hostOSScaleFactor.
+		self chevronSubmorph: SymbolMorph new.
+		self chevronSubmorph symbolName: #'chevron-right'.
+		self chevronSubmorph pointSize: (Theme current fontAt: 0) pointSize.
+		self chevronSubmorph morphExtent: (13 * s) @ (13 * s).
+		self chevronSubmorph lock.
+		self addMorphBack: self chevronSubmorph]! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 rebuildContent
-	"(Re)build content submorphs from current state. Each visual part is its own
-	morph: optional leading icon/marker, the text label, optional trailing
-	chevron for submenu items. The leading icon may be a vector Morph (e.g. a
-	SymbolMorph) used directly -- no bitmap -- or a Form / check-marker shown via
-	an ImageMorph. drawOn: paints only the selection pill; colors come from
-	#updateColors. Structural only."
-	| s checkState iconForm |
+	"(Re)build content submorphs from current state -- each visual part is its own
+	morph with its own rebuild: leading icon/check slot, text label, shortcut hint,
+	submenu chevron. drawOn: paints only the selection pill; colors come from
+	#updateColors, geometry from #layoutSubmorphs."
 	self labelSubmorph isNil ifTrue: [^ self].
-	s := DisplayScreen hostOSScaleFactor.
 	self labelSubmorph contents: self contents.
 	self labelSubmorph font: self fontToUse.
-	checkState := self valueOfProperty: #checkState.
-	(checkState isNil and: [icon isKindOf: Morph])
-		ifTrue: [
-			"Vector icon morph used directly -- no rasterizing."
-			self iconSubmorph == icon ifFalse: [
-				self iconSubmorph ifNotNil: [self iconSubmorph delete].
-				self iconSubmorph: icon.
-				self iconSubmorph lock.
-				self addMorphBack: self iconSubmorph]]
-		ifFalse: [
-			iconForm := checkState isNil
-				ifTrue: [icon ifNotNil: [self iconFormScaled]]
-				ifFalse: [checkState ifTrue: [self onImage] ifFalse: [self offImage]].
-			"Drop a previously-direct (non-image) icon morph when switching to a Form."
-			(self iconSubmorph notNil and: [(self iconSubmorph isKindOf: ImageMorph) not]) ifTrue: [
-				self iconSubmorph delete. self iconSubmorph: nil].
-			iconForm isNil
-				ifTrue: [self iconSubmorph ifNotNil: [self iconSubmorph delete. self iconSubmorph: nil]]
-				ifFalse: [
-					self iconSubmorph isNil ifTrue: [
-						self iconSubmorph: ImageMorph new.
-						self iconSubmorph lock.
-						self addMorphBack: self iconSubmorph].
-					self iconSubmorph image: iconForm]].
-	self hasSubMenu
-		ifTrue: [
-			self chevronSubmorph isNil ifTrue: [
-				self chevronSubmorph: SymbolMorph new.
-				self chevronSubmorph symbolName: #'chevron-right'.
-				self chevronSubmorph pointSize: (Theme current fontAt: 0) pointSize.
-				self chevronSubmorph morphExtent: (13 * s) @ (13 * s).
-				self chevronSubmorph lock.
-				self addMorphBack: self chevronSubmorph]]
-		ifFalse: [self chevronSubmorph ifNotNil: [self chevronSubmorph delete. self chevronSubmorph: nil]].
+	self rebuildIconSlot.
+	self rebuildChevron.
+	self rebuildHint.
 	self updateColors.
 	self layoutSubmorphs.
 	self redrawNeeded! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+rebuildHint
+	"The shortcut hint: a command-sign block plus the key character as SEPARATE labels,
+	so both edges of the hint column rule across items (see layoutSubmorphs). A shifted
+	shortcut (an uppercase letter in the spec) reads macOS-style: a shift arrow joins
+	the sign block -- growing leftward, so the command signs stay ruled -- and the key
+	always displays uppercase; case lives in the sign, not the key."
+	| hint |
+	hint := self valueOfProperty: #shortcutHint.
+	hint isNil ifTrue: [
+		self hintSubmorph ifNotNil: [:m | m delete. self hintSubmorph: nil].
+		self cmdSignSubmorph ifNotNil: [:m | m delete. self cmdSignSubmorph: nil].
+		^ self].
+	self cmdSignSubmorph isNil ifTrue: [
+		self cmdSignSubmorph: LabelMorph new.
+		self cmdSignSubmorph lock.
+		self addMorphBack: self cmdSignSubmorph].
+	self cmdSignSubmorph contents: ((hint isLetter and: [hint = hint asUppercase])
+		ifTrue: [(UnicodeString empty copyWith: (Character value: 16r21E7)) copyWith: (Character value: 16r2318)]
+		ifFalse: [UnicodeString empty copyWith: (Character value: 16r2318)]).
+	self cmdSignSubmorph font: self fontToUse.
+	self hintSubmorph isNil ifTrue: [
+		self hintSubmorph: LabelMorph new.
+		self hintSubmorph lock.
+		self addMorphBack: self hintSubmorph].
+	self hintSubmorph contents: (UnicodeString empty copyWith: hint asUppercase).
+	self hintSubmorph font: self fontToUse! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+rebuildIconSlot
+	"The leading slot: a native check glyph for an <on> item (an <off> item shows
+	nothing, but the column stays reserved -- see showsIcon), a vector icon Morph
+	used directly -- no rasterizing -- or a Form shown via an ImageMorph."
+	| s checkState iconForm |
+	s := DisplayScreen hostOSScaleFactor.
+	checkState := self valueOfProperty: #checkState.
+	checkState notNil ifTrue: [
+		checkState ifFalse: [^ self dropIconSubmorph].
+		(self iconSubmorph isKindOf: SymbolMorph) ifFalse: [
+			self dropIconSubmorph.
+			self iconSubmorph: SymbolMorph new.
+			self iconSubmorph pointSize: (Theme current fontAt: 0) pointSize.
+			self iconSubmorph lock.
+			self addMorphBack: self iconSubmorph].
+		self iconSubmorph symbolName: #check.
+		self iconSubmorph morphExtent: (13 * s) @ (13 * s).
+		^ self].
+	(icon isKindOf: Morph) ifTrue: [
+		self iconSubmorph == icon ifTrue: [^ self].
+		self dropIconSubmorph.
+		self iconSubmorph: icon.
+		self iconSubmorph lock.
+		self addMorphBack: self iconSubmorph.
+		^ self].
+	iconForm := icon ifNotNil: [self iconFormScaled].
+	iconForm isNil ifTrue: [^ self dropIconSubmorph].
+	(self iconSubmorph isKindOf: ImageMorph) ifFalse: [
+		self dropIconSubmorph.
+		self iconSubmorph: ImageMorph new.
+		self iconSubmorph lock.
+		self addMorphBack: self iconSubmorph].
+	self iconSubmorph image: iconForm! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 requiresVectorCanvas
@@ -7364,10 +7695,17 @@ select
 	self isSelected: true.
 	owner activeSubmenu: subMenu.
 	subMenu ifNotNil: [
-		self displayBounds ifNotNil: [:r |
+		self displayBounds ifNotNil: [:r | | mb ov |
+			"Anchor the submenu to the parent MENU's outer edges (not this item's -- items
+			are inset by the menu padding), overlapping a tiny amount on either side, the
+			way desktop menus nest: opened right, its left edge tucks just inside the
+			parent; flipped left (popUpAdjacentTo: uses the second point for its top-RIGHT),
+			its right edge tucks symmetrically."
+			mb := owner displayBounds.
+			ov := 4 * self hostScale.
 			subMenu delete.
 			subMenu
-				popUpAdjacentTo: (Array with: r topRight + ((10 @ 0) * self hostScale) with: r topLeft)
+				popUpAdjacentTo: (Array with: (mb right - ov) @ r top with: (mb left + ov) @ r top)
 				from: self.
 			subMenu setProperty: #forgiveParent toValue: owner.
 			self world activeHand ifNotNil: [:hand |
@@ -7386,9 +7724,10 @@ setIcon: aMorphOrFormOrSymbolOrNil
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 showsIcon
-	"Whether this item currently shows anything in the icon slot -- a vector or
-	Form icon, or a check-marker (all are realized as self iconSubmorph by rebuildContent)."
-	^ self iconSubmorph notNil! !
+	"Whether this item claims the icon slot -- a vector or Form icon, a check marker,
+	or BEING CHECKABLE at all: an <off> item shows no mark (macOS convention) but must
+	still reserve the column, so labels do not shift when the state toggles."
+	^ self iconSubmorph notNil or: [(self valueOfProperty: #checkState) notNil]! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 subMenu: aMenuMorph
@@ -7400,18 +7739,25 @@ updateColors
 	"Apply selection/enabled-dependent colors to the content submorphs. Light
 	because the menu background is dark; bright white when selected. A vector
 	icon morph (e.g. SymbolMorph) is tinted like the label; Form icons
-	(ImageMorph) keep their baked pixels."
-	| textColor |
+	(ImageMorph) keep their baked pixels. The shortcut hint idles dim -- it is
+	reference material -- but comes up close to full white on the hovered item,
+	where it must stay readable over the accent pill."
+	| textColor hintColor |
 	textColor := isEnabled
 		ifTrue: [isSelected ifTrue: [Color white] ifFalse: [Color white alpha: 0.95]]
 		ifFalse: [Color white alpha: 0.2].
+	hintColor := isEnabled
+		ifTrue: [isSelected ifTrue: [Color white alpha: 0.9] ifFalse: [Color white alpha: 0.4]]
+		ifFalse: [Color white alpha: 0.15].
 	self labelSubmorph ifNotNil: [self labelSubmorph color: textColor].
 	(self iconSubmorph notNil and: [(self iconSubmorph isKindOf: ImageMorph) not]) ifTrue: [
 		self iconSubmorph color: textColor].
 	self chevronSubmorph ifNotNil: [
 		self chevronSubmorph color: (isSelected
 			ifTrue: [Color white]
-			ifFalse: [Color white alpha: 0.4])]! !
+			ifFalse: [Color white alpha: 0.4])].
+	self hintSubmorph ifNotNil: [self hintSubmorph color: hintColor].
+	self cmdSignSubmorph ifNotNil: [self cmdSignSubmorph color: hintColor]! !
 
 !TextModelMorph methodsFor: '*Blueprint' stamp: ''!
 adoptWidgetsColor: paneColor
