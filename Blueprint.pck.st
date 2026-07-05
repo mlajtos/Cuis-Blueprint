@@ -8776,19 +8776,17 @@ squircleMinX: xMin maxX: xMax minY: yMin maxY: yMax radius: rIn
 		p: p a: a b: b c: c d: d r: r arcK: arcK alpha: alpha.
 	self closePath! !
 
-!HybridCanvas methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 14:51:08'!
+!HybridCanvas methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 14:07:26'!
 opaqueImage: aForm at: aPoint
 	"Fully opaque Form: plain store (Form over) instead of per-pixel alpha blending --
-	7x faster for display-sized wallpaper repair. The morph-ids branch clears the ids
-	of covered pixels to 0 (the world id) -- via a rule-3 store of a zero pixel, NOT
-	rule 0: rule-0 clear falls off BitBlt's fast path and runs ~11x slower than the
-	identical store (measured 5.8ms vs 0.5ms at 1.6Mpx). Bit-identical (both write 0)."
+	7x faster for display-sized wallpaper repair. The morph-ids branch mirrors
+	image:at:sourceRect: (rule 0 clears the ids of covered pixels)."
 	| p e |
 	e := aForm extent.
 	e > `0@0` ifFalse: [^ self].
 	p := (currentTransformation transform: aPoint) roundedHAFZ.
 	drawingOnMorphIDs ifTrue: [
-		engine sourceForm: nil; fillColor: Color transparent; combinationRule: Form over.
+		engine combinationRule: 0.
 		engine fillRect: (p extent: e).
 		^ self].
 	engine colorMap: (aForm colormapIfNeededFor: form); fillColor: nil.
