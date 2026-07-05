@@ -1,6 +1,6 @@
-'From Cuis7.9 [latest update: #7983] on 3 July 2026 at 4:37:17 pm'!
+'From Cuis7.9 [latest update: #7983] on 4 July 2026 at 6:29:18 pm'!
 'Description '!
-!provides: 'Blueprint' 1 287!
+!provides: 'Blueprint' 1 297!
 !requires: 'WebClient' 1 nil 1!
 SystemOrganization addCategory: #Blueprint!
 SystemOrganization addCategory: #'Blueprint-StateMachine'!
@@ -102,7 +102,7 @@ StateMachine class
 !classDefinition: #BlueprintTheme category: #Blueprint!
 Theme subclass: #BlueprintTheme
 	instanceVariableNames: ''
-	classVariableNames: 'FontCache FontPointSize Tile'
+	classVariableNames: 'ComposedTile FontCache FontPointSize Tile'
 	poolDictionaries: ''
 	category: 'Blueprint'!
 !classDefinition: 'BlueprintTheme class' category: #Blueprint!
@@ -1526,7 +1526,7 @@ fontPointSize: aLogicalPointSize
 		ifTrue: [UISupervisor whenUIinSafeState: [self applyTypography]]
 		ifFalse: [self applyTypography]! !
 
-!BlueprintTheme class methodsFor: 'system startup' stamp: 'ML 3/Jul/2026 16:09:41'!
+!BlueprintTheme class methodsFor: 'system startup' stamp: 'ML 4/Jul/2026 16:00:00'!
 fitDisplay
 	"Refit the desktop to the current display geometry: re-tile the wallpaper and
 	reflow the Dock. Geometry only -- never re-runs activation. (Activation itself
@@ -1535,7 +1535,7 @@ fitDisplay
 	| w |
 	w := UISupervisor ui.
 	w ifNil: [^ self].
-	w backgroundImage: self tile.
+	w backgroundImage: (self tileComposedTo: Display extent).
 	(w taskbar isKindOf: Dock) ifTrue: [w taskbar reflow]! !
 
 !BlueprintTheme class methodsFor: 'system startup' stamp: 'ML 3/Jul/2026 16:37:07'!
@@ -1546,6 +1546,32 @@ startUp: resuming
 	WorldMorph>>showTaskbar override covers every rebuild path structurally."
 	Theme current class == self ifFalse: [^ self].
 	self fitDisplay! !
+
+!BlueprintTheme class methodsFor: 'assets' stamp: 'ML 4/Jul/2026 13:43:19'!
+tileComposedTo: anExtent
+	"The wallpaper as one display-sized Form: the blueprint tile pre-composed so world
+	background repair is a single copy instead of re-tiling ~5M px per frame.
+	PRE-PHASED: tiles are laid with the same centering formula WorldMorph>>drawOn:
+	uses (super-tile edges at screen center), so the composed form draws at 0@0.
+	Cached; rebuilt when the display size changes. Costs extent area * 4 bytes
+	(~20 MB at 2880x1800) -- force a rebuild by setting ComposedTile := nil."
+	| tile f tw th xMod yMod x y |
+	(ComposedTile isNil or: [ComposedTile extent ~= anExtent]) ifTrue: [
+		tile := self tile.
+		tw := tile width.
+		th := tile height.
+		xMod := (anExtent x // 2) \\ tw.
+		yMod := (anExtent y // 2) \\ th.
+		f := Form extent: anExtent depth: 32.
+		x := xMod - tw.
+		[x < anExtent x] whileTrue: [
+			y := yMod - th.
+			[y < anExtent y] whileTrue: [
+				tile displayOn: f at: x@y.
+				y := y + th].
+			x := x + tw].
+		ComposedTile := f].
+	^ ComposedTile! !
 
 !Popover methodsFor: 'drawing' stamp: ''!
 drawOn: aCanvas
@@ -7877,15 +7903,17 @@ defaultPadding
 	s := DisplayScreen hostOSScaleFactor.
 	^ (8 * s) @ (8 * s)! !
 
-!TextModelMorph methodsFor: '*Blueprint' stamp: ''!
+!TextModelMorph methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 15:00:00'!
 drawOn: aCanvas
 	"Blueprint: same as vanilla TextModelMorph>>drawOn: but skip the keyboard-focus
 	outline (it's distracting since focus follows mouse). Keep the red/tan feedback
-	for unaccepted edits / refusesToAccept / editing conflicts."
+	for unaccepted edits / refusesToAccept / editing conflicts.
+	Note: fetch the focusIndicatorWidth preference only when actually drawing an
+	adornment -- PreferenceSet>>at: is costly and this runs on every text pane draw."
 	| bw bc |
 	super drawOn: aCanvas.
-	bw := Preferences at: #focusIndicatorWidth.
 	bc := nil.
+	bw := 1.
 	self wantsFrameAdornments ifTrue: [
 		model refusesToAccept
 			ifTrue: [bc := Color tan]
@@ -7897,6 +7925,7 @@ drawOn: aCanvas
 					ifFalse: [
 						scroller hasUnacceptedEdits ifTrue: [bc := Color red]]]].
 	bc ifNotNil: [
+		bw = 3 ifFalse: [bw := Preferences at: #focusIndicatorWidth].
 		aCanvas
 			frameRectangle: self focusIndicatorRectangle
 			borderWidth: bw
@@ -8096,7 +8125,7 @@ extentChanged: oldExtent
 			halo morphPosition: 0 @ 0.
 			halo morphExtent: extent]! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 14:00:00'!
 fullScreen
 	"Toggle between normal bounds and (almost) fullscreen, animating the bounds on the shared Animator.
 	A second toggle returns to the bounds remembered in #preMaximizeBounds."
@@ -8369,13 +8398,20 @@ desktopWindows
 	mini-map, which must keep tracking a drag, adds that back itself (see SpaceCard>>bpDesktopMorphs)."
 	^ self submorphs select: [:m | m isManagedDesktopMorph]! !
 
-!WorldMorph methodsFor: '*Blueprint' stamp: ''!
+!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 14:07:26'!
 drawOn: aCanvas
-	"Tile backgroundImage so super-tile edges land exactly at the horizontal AND vertical centers of the screen.
-	No backgroundImage -> vanilla draw."
+	"Blueprint wallpaper. Two regimes:
+	- A display-sized pre-phased wallpaper (BlueprintTheme class>>tileComposedTo:):
+	  ONE opaque blit at 0@0 covers the whole world. No color underfill (it would be
+	  100% overdrawn), no tiling loop. This is the hot path for background repair.
+	- A smaller tile: fill with color first (tiles might not cover edge slivers),
+	  then tile so super-tile edges land at the horizontal AND vertical centers of
+	  the screen. No backgroundImage -> vanilla draw."
 	| img tw th xMod yMod x0 y0 x y rightEdge bottomEdge |
 	img := backgroundImage.
 	img isNil ifTrue: [ ^ super drawOn: aCanvas ].
+	(img width >= extent x and: [img height >= extent y]) ifTrue: [
+		^ aCanvas opaqueImage: img at: `0@0` ].
 	aCanvas fillRectangle: self localBounds color: color.
 	tw := img width.
 	th := img height.
@@ -8637,6 +8673,12 @@ preferencesMenuOptions
 		}`.
 ! !
 
+!MorphicCanvas methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 14:07:26'!
+opaqueImage: aForm at: aPoint
+	"Draw a Form known by the caller to be fully opaque. Canvases that can exploit
+	opacity override this; the default is the regular (possibly blending) draw."
+	self image: aForm at: aPoint! !
+
 !AbstractVectorCanvas methodsFor: '*Blueprint' stamp: ''!
 chromeStrokes: aRectangle radius: r scale: s inner: innerColor outer: outerColor
 	"The Blueprint chrome edge: a 1px inner highlight stroke plus a 0.5px outer hairline,
@@ -8733,6 +8775,22 @@ squircleMinX: xMin maxX: xMax minY: yMin maxY: yMax radius: rIn
 	self squircleCornerAt: cornerTL incoming: ivecTL outgoing: ovecTL
 		p: p a: a b: b c: c d: d r: r arcK: arcK alpha: alpha.
 	self closePath! !
+
+!HybridCanvas methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 14:07:26'!
+opaqueImage: aForm at: aPoint
+	"Fully opaque Form: plain store (Form over) instead of per-pixel alpha blending --
+	7x faster for display-sized wallpaper repair. The morph-ids branch mirrors
+	image:at:sourceRect: (rule 0 clears the ids of covered pixels)."
+	| p e |
+	e := aForm extent.
+	e > `0@0` ifFalse: [^ self].
+	p := (currentTransformation transform: aPoint) roundedHAFZ.
+	drawingOnMorphIDs ifTrue: [
+		engine combinationRule: 0.
+		engine fillRect: (p extent: e).
+		^ self].
+	engine colorMap: (aForm colormapIfNeededFor: form); fillColor: nil.
+	engine image: aForm at: p sourceRect: aForm boundingBox rule: Form over! !
 
 !VectorEngineWithPlugin methodsFor: '*Blueprint' stamp: ''!
 finishPath: ensureClosePath
