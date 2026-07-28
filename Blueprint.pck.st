@@ -1,11 +1,12 @@
-'From Cuis7.9 [latest update: #7983] on 4 July 2026 at 6:29:18 pm'!
+'From Cuis7.9 [latest update: #7983] on 5 July 2026 at 2:51:48 pm'!
 'Description '!
-!provides: 'Blueprint' 1 297!
+!provides: 'Blueprint' 1 301!
 !requires: 'WebClient' 1 nil 1!
 SystemOrganization addCategory: #Blueprint!
 SystemOrganization addCategory: #'Blueprint-StateMachine'!
 SystemOrganization addCategory: #'Blueprint-Stage'!
 SystemOrganization addCategory: #'Blueprint-Halo'!
+SystemOrganization addCategory: #'Blueprint-Scratch'!
 
 
 !classDefinition: #BlueprintPackage category: #Blueprint!
@@ -189,6 +190,16 @@ ColoredBoxMorph subclass: #ClockHands
 ClockHands class
 	instanceVariableNames: ''!
 
+!classDefinition: #MenuSearchMorph category: #Blueprint!
+ColoredBoxMorph subclass: #MenuSearchMorph
+	instanceVariableNames: 'searchIcon query'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Blueprint'!
+!classDefinition: 'MenuSearchMorph class' category: #Blueprint!
+MenuSearchMorph class
+	instanceVariableNames: ''!
+
 !classDefinition: #MenuTitleMorph category: #Blueprint!
 ColoredBoxMorph subclass: #MenuTitleMorph
 	instanceVariableNames: ''
@@ -327,6 +338,16 @@ SymbolMorph subclass: #SymbolButton
 	category: 'Blueprint'!
 !classDefinition: 'SymbolButton class' category: #Blueprint!
 SymbolButton class
+	instanceVariableNames: ''!
+
+!classDefinition: #CommandResultMorph category: #Blueprint!
+MenuItemMorph subclass: #CommandResultMorph
+	instanceVariableNames: 'pathLabels leafLabel matchedIndices shortcutHint'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Blueprint'!
+!classDefinition: 'CommandResultMorph class' category: #Blueprint!
+CommandResultMorph class
 	instanceVariableNames: ''!
 
 !classDefinition: #FillWidthScrollPane category: #Blueprint!
@@ -3153,6 +3174,78 @@ requiresVectorCanvas ^ true! !
 
 !ClockHands methodsFor: 'initialization' stamp: ''!
 initialize super initialize. self color: Color transparent! !
+
+!MenuSearchMorph methodsFor: 'initialization' stamp: 'ML 5/Jul/2026 11:32:36'!
+initialize
+	"A display-only search row for the command palette: a search glyph plus the mirrored query
+	text drawn on the menu's dark chrome. It never takes keyboard focus -- the menu keeps focus
+	and feeds us the query via matchString: (see MenuMorph>>rebuildResultsFor:)."
+	| s |
+	super initialize.
+	s := DisplayScreen hostOSScaleFactor.
+	color := Color transparent.
+	query := String new.
+	searchIcon := SymbolMorph new.
+	searchIcon symbolName: #search.
+	searchIcon color: (Color white alpha: 0.5).
+	searchIcon pointSize: (Theme current fontAt: -1) pointSize + 2.
+	searchIcon lock.
+	self addMorph: searchIcon.
+	self morphExtent: (240 * s) @ (34 * s)! !
+
+!MenuSearchMorph methodsFor: 'accessing' stamp: 'ML 5/Jul/2026 11:32:36'!
+matchString: aString
+	"Mirror the menu's current query into the field."
+	query := aString ifNil: [String new].
+	self redrawNeeded! !
+
+!MenuSearchMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 12:08:14'!
+drawOn: aCanvas
+	"Subtle recessed field on the dark chrome: translucent-white fill + hairline stroke, the
+	search glyph (a submorph) and the mirrored query text. Shows a dim placeholder when empty
+	(rare -- the row only appears once the user has typed)."
+	| s f h field textX textY |
+	s := DisplayScreen hostOSScaleFactor.
+	h := self morphExtent y.
+	field := (`0@0` corner: (self morphExtent x) @ h) insetBy: (0 @ (4 * s)).
+	aCanvas fillColor: (Color white alpha: 0.08) do: [
+		aCanvas squircle: field radius: 8 * s].
+	aCanvas strokeWidth: 0.75 * s color: (Color white alpha: 0.15) do: [
+		aCanvas squircle: field radius: 8 * s inset: 0.375 * s].
+	f := Theme current fontAt: -1.
+	textX := searchIcon morphPosition x + searchIcon morphExtent x + (8 * s).
+	textY := (h - f lineSpacing) / 2.
+	query isEmpty
+		ifTrue: [aCanvas drawString: 'Type to filter' at: textX @ textY font: f color: (Color white alpha: 0.35)]
+		ifFalse: [aCanvas drawString: query at: textX @ textY font: f color: (Color white alpha: 0.95)]! !
+
+!MenuSearchMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 11:32:36'!
+requiresVectorCanvas
+	^ true! !
+
+!MenuSearchMorph methodsFor: 'geometry' stamp: 'ML 5/Jul/2026 11:32:36'!
+minItemWidth
+	"A stable preferred width so the palette never collapses narrower than a usable field;
+	the menu layout stretches us to the real column width."
+	^ 240 * DisplayScreen hostOSScaleFactor! !
+
+!MenuSearchMorph methodsFor: 'geometry' stamp: 'ML 5/Jul/2026 11:32:36'!
+minimumExtent
+	"Only the height matters to the menu layout (it stretches width to the column)."
+	| s |
+	s := DisplayScreen hostOSScaleFactor.
+	^ (240 * s) @ (34 * s)! !
+
+!MenuSearchMorph methodsFor: 'layout' stamp: 'ML 5/Jul/2026 11:32:36'!
+extentChanged: oldExtent
+	super extentChanged: oldExtent.
+	self layoutSubmorphs! !
+
+!MenuSearchMorph methodsFor: 'layout' stamp: 'ML 5/Jul/2026 11:32:36'!
+layoutSubmorphs
+	| s |
+	s := DisplayScreen hostOSScaleFactor.
+	searchIcon morphPosition: (12 * s) @ ((self morphExtent y - searchIcon morphExtent y) / 2)! !
 
 !MenuTitleMorph methodsFor: 'geometry' stamp: ''!
 minItemWidth
@@ -6695,6 +6788,137 @@ mouseLeave: anEvent
 		self color: c.
 		self redrawNeeded]! !
 
+!CommandResultMorph methodsFor: 'initialization' stamp: 'ML 5/Jul/2026 11:20:37'!
+initialize
+	"A flat command-palette result row: a MenuItemMorph with no content submorphs -- the dim
+	breadcrumb + leaf name (and, in step 4, the matched-char highlight) are drawn directly in
+	drawOn:. The selection pill, keyboard/mouse selection and invoke are all inherited."
+	super initialize.
+	self labelSubmorph ifNotNil: [:m | m delete].
+	self labelSubmorph: nil.
+	pathLabels := #().
+	leafLabel := String new.
+	matchedIndices := #()! !
+
+!CommandResultMorph methodsFor: 'building' stamp: 'ML 5/Jul/2026 12:41:28'!
+fromCommand: entry matched: indices
+	"Configure this row from a { pathLabels. leafLabel. sourceItem } index entry. Copy the
+	source item's target/selector/arguments so the inherited invokeWithEvent: fires the
+	original action, and its shortcut hint (normalized to a single Character, or nil)."
+	| src hv |
+	src := entry third.
+	target := src instVarNamed: #target.
+	selector := src instVarNamed: #selector.
+	arguments := src instVarNamed: #arguments.
+	hv := src valueOfProperty: #shortcutHint.
+	(hv notNil and: [(hv isKindOf: Character) not]) ifTrue: [
+		hv := hv asString.
+		hv := hv isEmpty ifTrue: [nil] ifFalse: [hv first]].
+	shortcutHint := hv.
+	pathLabels := entry first.
+	leafLabel := entry second.
+	matchedIndices := indices.
+	self redrawNeeded! !
+
+!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 11:20:37'!
+breadcrumbText
+	"The dim breadcrumb prefix drawn before the leaf name: the ancestor submenu labels joined
+	by a right-angle separator, with a trailing separator before the leaf. Empty for a
+	top-level command."
+	| ws sep |
+	(pathLabels isNil or: [pathLabels isEmpty]) ifTrue: [^ String new].
+	sep := Character value: 16r203A.
+	ws := WriteStream on: String new.
+	pathLabels do: [:p | ws nextPutAll: p] separatedBy: [ws space; nextPut: sep; space].
+	ws space; nextPut: sep; space.
+	^ ws contents! !
+
+!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 13:24:16'!
+commandGlyph
+	"The command-key mark from the SymbolFont (Tabler #command), as a UnicodeString -- these
+	glyphs live in the private-use area, beyond Latin-1, so a plain String cannot hold them."
+	^ UnicodeString empty copyWith: (SymbolFont at: #command)! !
+
+!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 13:24:16'!
+drawOn: aCanvas
+	"Selection pill (inherited), dim breadcrumb, the leaf name, and the shortcut hint.
+	Leaf: one font, each color run placed at its EXACT kerned origin (widthOfString(1..i) minus
+	widthOf char i -- includes the boundary kern pair) so matched/unmatched flows continuously;
+	matched brighter, rest dimmed (harder on the selected pill where brightness alone must
+	carry it). Hint: SymbolFont command/shift marks + the key letter, baseline-aligned, with the
+	command mark parked at a fixed column so hints line up across rows."
+	| s f h x y bcColor bright dim hintColor bc matched i j isM leafX rowW keyColW keyChar keyW keyLeft keyX baseY sf cmd cmdW cmdX shift shiftW |
+	super drawOn: aCanvas.
+	s := DisplayScreen hostOSScaleFactor.
+	f := self fontToUse.
+	h := self morphExtent y.
+	rowW := self morphExtent x.
+	y := (h - f lineSpacing) / 2.
+	x := 8 * s.
+	bcColor := isSelected ifTrue: [Color white alpha: 0.7] ifFalse: [Color white alpha: 0.4].
+	bright := isSelected ifTrue: [Color white] ifFalse: [Color white alpha: 0.98].
+	dim := isSelected ifTrue: [Color white alpha: 0.5] ifFalse: [Color white alpha: 0.7].
+	hintColor := isSelected ifTrue: [Color white alpha: 0.8] ifFalse: [Color white alpha: 0.4].
+	bc := self breadcrumbText.
+	bc isEmpty ifFalse: [
+		aCanvas drawString: bc at: x @ y font: f color: bcColor.
+		x := x + (f widthOfString: bc)].
+	leafX := x.
+	matched := (matchedIndices ifNil: [#()]) asSet.
+	i := 1.
+	[i <= leafLabel size] whileTrue: [
+		isM := matched includes: i.
+		j := i.
+		[j < leafLabel size and: [(matched includes: j + 1) = isM]] whileTrue: [j := j + 1].
+		aCanvas drawString: leafLabel from: i to: j
+			at: (leafX + (f widthOfString: leafLabel from: 1 to: i) - (f widthOf: (leafLabel at: i))) @ y
+			font: f color: (isM ifTrue: [bright] ifFalse: [dim]).
+		i := j + 1].
+	shortcutHint ifNotNil: [
+		sf := self hintSymbolFont.
+		cmd := self commandGlyph.
+		cmdW := sf widthOfString: cmd.
+		keyChar := shortcutHint asUppercase.
+		keyW := f widthOf: keyChar.
+		keyColW := f widthOf: $W.
+		baseY := y + f ascent.
+		keyLeft := rowW - (8 * s) - keyColW.
+		keyX := keyLeft + ((keyColW - keyW) / 2).
+		cmdX := keyLeft - (2 * s) - cmdW.
+		(shortcutHint isLetter and: [shortcutHint = shortcutHint asUppercase]) ifTrue: [
+			shift := self shiftGlyph.
+			shiftW := sf widthOfString: shift.
+			aCanvas drawString: shift atBaseline: (cmdX - shiftW - (1 * s)) @ baseY font: sf color: hintColor].
+		aCanvas drawString: cmd atBaseline: cmdX @ baseY font: sf color: hintColor.
+		aCanvas drawString: keyChar asString atBaseline: keyX @ baseY font: f color: hintColor]! !
+
+!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 13:24:16'!
+hintSymbolFont
+	"The Blueprint SymbolFont sized for the shortcut hint -- a touch below the text so the
+	glyphs sit as quiet modifier marks, not shouting."
+	^ SymbolFont fontDescriptionPointSize: (self fontToUse pointSize * 0.9) rounded! !
+
+!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 13:24:16'!
+shiftGlyph
+	"The shift mark from the SymbolFont: Tabler #'arrow-big-up' -- a solid, substantial arrow
+	(DejaVu's Unicode up-arrows are all thin and the same narrow width)."
+	^ UnicodeString empty copyWith: (SymbolFont at: #'arrow-big-up')! !
+
+!CommandResultMorph methodsFor: 'geometry' stamp: 'ML 5/Jul/2026 13:24:16'!
+minimumExtent
+	"pad + breadcrumb + leaf + the shortcut-hint column (SymbolFont command mark + shared key
+	column, plus a shift mark for shifted bindings) when present; height = a normal menu item."
+	| s f w hintW |
+	s := DisplayScreen hostOSScaleFactor.
+	f := self fontToUse.
+	w := (f widthOfString: self breadcrumbText) + (f widthOfString: (leafLabel ifNil: [String new])).
+	hintW := 0.
+	shortcutHint ifNotNil: [
+		hintW := (24 * s) + (self hintSymbolFont widthOfString: self commandGlyph) + (f widthOf: $W).
+		(shortcutHint isLetter and: [shortcutHint = shortcutHint asUppercase])
+			ifTrue: [hintW := hintW + (self hintSymbolFont widthOfString: self shiftGlyph)]].
+	^ ((16 * s) + w + hintW) @ (20 * s)! !
+
 !FillWidthScrollPane methodsFor: 'layout' stamp: ''!
 extentChanged: oldExtent
 	"Push my width into the scroller so it can re-flow (height stays whatever
@@ -7371,26 +7595,172 @@ adjustSubmorphsLayout
 		p := p + (0 @ h)].
 	self morphExtent: (w + (padH * 2)) @ (p y + padV)! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:13:13'!
+collectCommandsFrom: aMenu path: pathArray into: aColl depth: depth
+	"Recursively flatten aMenu into aColl as command entries. Each entry is an Array
+	{ pathLabels. leafLabel. sourceItem }: pathLabels are the ancestor submenu-opening item
+	labels (root outermost), leafLabel is the item's display text, sourceItem is the original
+	MenuItemMorph so a flat row can fire its action. Disabled items are skipped (hidden);
+	submenus recurse; the depth guard stops pathological cycles."
+	depth > 12 ifTrue: [^ self].
+	aMenu items do: [:item |
+		item isEnabled ifTrue: [
+			item hasSubMenu
+				ifTrue: [self
+					collectCommandsFrom: item subMenu
+					path: (pathArray copyWith: item contents)
+					into: aColl
+					depth: depth + 1]
+				ifFalse: [aColl add: (Array with: pathArray with: item contents with: item)]]]! !
+
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:22:29'!
+displayFiltered: evt
+	"Blueprint command-palette filter -- replaces the base disable-in-place behavior and the
+	gray <foo> feedback label. An empty query restores the normal menu; a non-empty query
+	flattens the whole menu tree to a ranked flat list of matching leaf commands."
+	| matchStr |
+	matchStr := self valueOfProperty: #matchString ifAbsent: [String new].
+	matchStr isEmpty
+		ifTrue: [self exitSearchMode]
+		ifFalse: [
+			self enterSearchModeIfNeeded.
+			self rebuildResultsFor: matchStr]! !
+
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 14:00:19'!
 drawOn: aCanvas
-	"Dark translucent chrome body (Apple-continuous-corner squircle, radius
-	Theme roundedMenuRadius). The edge strokes are drawn in postDrawOn: so
-	items can never occlude them."
+	"Dark chrome body (Apple-continuous-corner squircle, radius Theme roundedMenuRadius), filled
+	over the FULL localBounds like SystemWindow -- so the edge strokes (postDrawOn:) compose ON
+	TOP of the body rather than sitting in an inset gap. chromeBody is bumped less-transparent
+	here (its doc says surfaces tune alpha at the call site)."
 	| s r |
 	s := self hostScale.
 	r := Theme current roundedMenuRadius * s.
-	aCanvas fillColor: Theme current chromeBody do: [
-		aCanvas squircle: self localBounds radius: r inset: 1.5 * s]! !
+	aCanvas fillColor: (Theme current chromeBody alpha: 0.92) do: [
+		aCanvas squircle: self localBounds radius: r]! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:33:14'!
+enterSearchModeIfNeeded
+	"First keystroke: build & cache the command index (while the real items are still here),
+	detach the normal items/lines into #normalBody, then add the display-only search row under
+	the title. Idempotent."
+	| body searchRow |
+	(self valueOfProperty: #inSearchMode ifAbsent: [false]) ifTrue: [^ self].
+	self paletteCommands.
+	body := self submorphs reject: [:m | m == titleMorph].
+	self setProperty: #normalBody toValue: body.
+	body do: [:m | m delete].
+	searchRow := MenuSearchMorph new.
+	self addMorphBack: searchRow.
+	self setProperty: #searchRow toValue: searchRow.
+	self setProperty: #inSearchMode toValue: true! !
+
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:33:14'!
+exitSearchMode
+	"Restore the normal menu: drop the search row and result rows, re-attach the saved
+	items/lines, and clear the cached index + search state. A no-op when not in search mode."
+	(self valueOfProperty: #inSearchMode ifAbsent: [false]) ifFalse: [^ self].
+	(self valueOfProperty: #searchRow) ifNotNil: [:sr | sr delete].
+	self removeProperty: #searchRow.
+	(self submorphs select: [:m | m is: #MenuItemMorph]) do: [:m | m delete].
+	(self valueOfProperty: #normalBody) ifNotNil: [:body | body do: [:m | self addMorphBack: m]].
+	self removeProperty: #normalBody.
+	self removeProperty: #paletteIndex.
+	self setProperty: #inSearchMode toValue: false.
+	self selectItem: nil.
+	self adjustSubmorphsLayout! !
+
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:11:51'!
+fuzzyScoreOf: query for: candidate
+	"Greedy in-order subsequence match of query against candidate (a leaf label),
+	case-insensitive. Answers nil when not every query char occurs in order; otherwise
+	an Array { score. matchedIndices } where matchedIndices are the 1-based positions in
+	candidate that matched -- higher score = better. Rewards word-start hits, contiguous
+	runs and a leading-prefix match; penalizes gaps and long candidates (as a tie-break)."
+	| q c score prev qi ci qc found matched ch atWordStart |
+	q := query asLowercase.
+	c := candidate asLowercase.
+	q isEmpty ifTrue: [^ Array with: 0 with: #()].
+	score := 0.
+	prev := -10.
+	qi := 1.
+	ci := 1.
+	matched := OrderedCollection new.
+	[qi <= q size] whileTrue: [
+		qc := q at: qi.
+		found := false.
+		[ci <= c size and: [found not]] whileTrue: [
+			(c at: ci) = qc
+				ifTrue: [found := true]
+				ifFalse: [ci := ci + 1]].
+		found ifFalse: [^ nil].
+		atWordStart := ci = 1.
+		atWordStart ifFalse: [
+			ch := c at: ci - 1.
+			atWordStart := (ch isLetter or: [ch isDigit]) not].
+		atWordStart
+			ifTrue: [score := score + 15]
+			ifFalse: [score := score + 1].
+		ci = (prev + 1)
+			ifTrue: [score := score + 12]
+			ifFalse: [prev >= 0 ifTrue: [score := score - ((ci - prev - 1) min: 4)]].
+		matched add: ci.
+		prev := ci.
+		qi := qi + 1.
+		ci := ci + 1].
+	matched first = 1 ifTrue: [score := score + 8].
+	score := score - (candidate size // 8).
+	^ Array with: score with: matched asArray! !
+
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:13:13'!
+paletteCommands
+	"The cached flat command index for this menu: an OrderedCollection of
+	{ pathLabels. leafLabel. sourceItem } entries built by recursively flattening the whole
+	submenu tree. Built once per popup, lazily on first keystroke (see enterSearchModeIfNeeded)."
+	| coll |
+	^ self valueOfProperty: #paletteIndex ifAbsent: [
+		coll := OrderedCollection new.
+		self collectCommandsFrom: self path: #() into: coll depth: 0.
+		self setProperty: #paletteIndex toValue: coll.
+		coll ]! !
+
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 14:15:04'!
 postDrawOn: aCanvas
-	"Chrome edge on top of the items: 1px inner highlight + 0.5px outer hairline.
-	Answer true since we drew."
+	"Chrome edge on top of the items: the inner highlight + a 0.5px outer hairline, via the
+	shared chromeStrokes recipe. Now that the body fills full bounds (see drawOn:), the highlight
+	composes ON TOP of it, so the standard chromeHighlight token reads as intended. Answer true."
 	| s |
 	s := self hostScale.
 	aCanvas chromeStrokes: self localBounds radius: Theme current roundedMenuRadius * s scale: s
 		inner: Theme current chromeHighlight outer: Theme current chromeHairline.
 	^ true! !
+
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:33:14'!
+rebuildResultsFor: matchStr
+	"Remove the previous result rows, fuzzy-rank the command index against matchStr, and add a
+	CommandResultMorph per hit (capped). Auto-select the top hit so Return invokes it, and
+	mirror the query into the search row."
+	| scored cap rows sc row |
+	self selectItem: nil.
+	(self submorphs select: [:m | m is: #MenuItemMorph]) do: [:m | m delete].
+	scored := OrderedCollection new.
+	self paletteCommands do: [:entry |
+		sc := self fuzzyScoreOf: matchStr for: entry second.
+		sc ifNotNil: [scored add: (Array with: sc first with: sc second with: entry)]].
+	scored := scored asSortedCollection: [:a :b |
+		a first = b first
+			ifTrue: [a third second size <= b third second size]
+			ifFalse: [a first > b first]].
+	cap := 50.
+	rows := OrderedCollection new.
+	scored do: [:s |
+		rows size < cap ifTrue: [
+			row := CommandResultMorph new.
+			row fromCommand: s third matched: s second.
+			self addMorphBack: row.
+			rows add: row]].
+	rows isEmpty ifFalse: [self selectItem: rows first].
+	(self valueOfProperty: #searchRow) ifNotNil: [:sr | sr matchString: matchStr].
+	self adjustSubmorphsLayout! !
 
 !MenuMorph methodsFor: '*Blueprint' stamp: ''!
 removeStayUpBox
@@ -7524,6 +7894,17 @@ extentChanged: oldExtent
 	super extentChanged: oldExtent.
 	self layoutSubmorphs! !
 
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 13:37:31'!
+fadedFormOf: aForm
+	"A dimmed copy of aForm at reduced opacity: alpha scaled down via image:multipliedBy:, with
+	color and true transparency preserved -- unlike asGrayScaleAndTransparent, which remaps the
+	image to green-channel gray and rebuilds (and breaks) the transparency map."
+	| faded |
+	faded := Form extent: aForm extent depth: 32.
+	faded fillColor: Color transparent.
+	(VectorCanvas onForm: faded) image: aForm multipliedBy: (Color white alpha: 0.35) at: `0@0`.
+	^ faded! !
+
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 fontToUse
 	"Menu item text: one step below body on the Blueprint type scale -- menus are
@@ -7556,21 +7937,21 @@ hintSubmorph
 hintSubmorph: aMorphOrNil
 	self setProperty: #hintMorph toValue: aMorphOrNil! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 13:37:31'!
 iconFormScaled
-	"The item's icon Form scaled to the menu icon size (16 dp logical) -- UP or
-	down, so small source icons fill the slot rather than floating lost in it --
-	aspect-preserved and smoothed; greyed when disabled."
-	| iconForm w h targetSize sc |
+	"The item's Form icon scaled to the menu icon size (16 dp), aspect-preserved and smoothed;
+	dimmed by reduced OPACITY when disabled (color + transparency intact)."
+	| w h targetSize sc scaled |
 	icon isNil ifTrue: [^ nil].
-	iconForm := isEnabled ifTrue: [icon] ifFalse: [icon asGrayScaleAndTransparent].
-	w := iconForm width.
-	h := iconForm height.
-	(w = 0 or: [h = 0]) ifTrue: [^ iconForm].
+	w := icon width.
+	h := icon height.
+	(w = 0 or: [h = 0]) ifTrue: [^ icon].
 	targetSize := (16 * DisplayScreen hostOSScaleFactor) rounded.
 	sc := (targetSize / w) min: (targetSize / h).
-	sc = 1 ifTrue: [^ iconForm].
-	^ iconForm magnify: iconForm boundingBox to: (w * sc) rounded @ (h * sc) rounded smoothing: 2! !
+	scaled := sc = 1
+		ifTrue: [icon]
+		ifFalse: [icon magnify: icon boundingBox to: (w * sc) rounded @ (h * sc) rounded smoothing: 2].
+	^ isEnabled ifTrue: [scaled] ifFalse: [self fadedFormOf: scaled]! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 iconSubmorph
@@ -7665,28 +8046,19 @@ minItemWidth
 	"Same width math as #minimumExtent â pad + icon slot + gap + text + pad."
 	^ self minimumExtent x! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 14:00:19'!
 minimumExtent
-	"pad + (icon slot + gap, only when some item in this menu shows or can show an
-	icon -- #reservesIconColumn) + label width + pad, plus the right-hand tracks:
-	the shared key/chevron column (hintColumnWidth), doubled with a small gap when
-	an item somehow has both, the command sign, and a wide lead gap so label and
-	hint never crowd."
-	| s padH iconSlotW gap labelW trailing colW |
+	"pad + (icon slot + gap when the menu reserves an icon column) + label width + the SHARED
+	trailing column (shortcut/chevron track reserved for every item, so labels never cross into
+	it) + pad."
+	| s padH iconSlotW gap labelW |
 	s := DisplayScreen hostOSScaleFactor.
 	padH := 8 * s.
 	self reservesIconColumn
 		ifTrue: [iconSlotW := 18 * s. gap := 4 * s]
 		ifFalse: [iconSlotW := 0. gap := 0].
 	labelW := self labelSubmorph isNil ifTrue: [0] ifFalse: [self labelSubmorph morphWidth].
-	colW := self hintColumnWidth.
-	trailing := 0.
-	(self hasSubMenu and: [self chevronSubmorph notNil]) ifTrue: [
-		trailing := trailing + (4 * s) + colW].
-	self hintSubmorph ifNotNil: [ | cmdW |
-		cmdW := self cmdSignSubmorph ifNil: [0] ifNotNil: [:c | c morphWidth].
-		trailing := trailing + (16 * s) + cmdW + (2 * s) + colW].
-	^ ((padH * 2) + iconSlotW + gap + labelW + trailing) @ (20 * s)! !
+	^ ((padH * 2) + iconSlotW + gap + labelW + self sharedTrailingWidth) @ (20 * s)! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 mouseEnter: aMouseEnterEvent
@@ -7701,6 +8073,21 @@ mouseEnter: aMouseEnterEvent
 			self addAlarm: #forgiveDwellExpired after: 150.
 			^ self].
 		owner selectItem: self]! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 14:00:19'!
+ownTrailingWidth
+	"The width THIS item's own shortcut hint (command sign + key column) or submenu chevron
+	(key column) needs at the right. Zero when it has neither."
+	| s colW trailing |
+	s := DisplayScreen hostOSScaleFactor.
+	colW := self hintColumnWidth.
+	trailing := 0.
+	(self hasSubMenu and: [self chevronSubmorph notNil]) ifTrue: [
+		trailing := trailing + (4 * s) + colW].
+	self hintSubmorph ifNotNil: [ | cmdW |
+		cmdW := self cmdSignSubmorph ifNil: [0] ifNotNil: [:c | c morphWidth].
+		trailing := trailing + (16 * s) + cmdW + (2 * s) + colW].
+	^ trailing! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 rebuildChevron
@@ -7735,27 +8122,26 @@ rebuildContent
 	self layoutSubmorphs.
 	self redrawNeeded! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 13:37:31'!
 rebuildHint
-	"The shortcut hint: a command-sign block plus the key character as SEPARATE labels,
-	so both edges of the hint column rule across items (see layoutSubmorphs). A shifted
-	shortcut (an uppercase letter in the spec) reads macOS-style: a shift arrow joins
-	the sign block -- growing leftward, so the command signs stay ruled -- and the key
-	always displays uppercase; case lives in the sign, not the key."
-	| hint |
+	"The shortcut hint: SymbolFont command (and shift) marks as one submorph, plus the key
+	character as another, so both edges of the hint column rule across items. A shifted
+	shortcut reads macOS-style: a shift mark joins the sign block and the key shows uppercase."
+	| hint symFont |
 	hint := self valueOfProperty: #shortcutHint.
 	hint isNil ifTrue: [
 		self hintSubmorph ifNotNil: [:m | m delete. self hintSubmorph: nil].
 		self cmdSignSubmorph ifNotNil: [:m | m delete. self cmdSignSubmorph: nil].
 		^ self].
+	symFont := SymbolFont fontDescriptionPointSize: (self fontToUse pointSize * 0.9) rounded.
 	self cmdSignSubmorph isNil ifTrue: [
 		self cmdSignSubmorph: LabelMorph new.
 		self cmdSignSubmorph lock.
 		self addMorphBack: self cmdSignSubmorph].
 	self cmdSignSubmorph contents: ((hint isLetter and: [hint = hint asUppercase])
-		ifTrue: [(UnicodeString empty copyWith: (Character value: 16r21E7)) copyWith: (Character value: 16r2318)]
-		ifFalse: [UnicodeString empty copyWith: (Character value: 16r2318)]).
-	self cmdSignSubmorph font: self fontToUse.
+		ifTrue: [(UnicodeString empty copyWith: (SymbolFont at: #'arrow-big-up')) copyWith: (SymbolFont at: #command)]
+		ifFalse: [UnicodeString empty copyWith: (SymbolFont at: #command)]).
+	self cmdSignSubmorph font: symFont.
 	self hintSubmorph isNil ifTrue: [
 		self hintSubmorph: LabelMorph new.
 		self hintSubmorph lock.
@@ -7843,6 +8229,17 @@ setIcon: aMorphOrFormOrSymbolOrNil
 		ifTrue: [Theme current perform: aMorphOrFormOrSymbolOrNil]
 		ifFalse: [aMorphOrFormOrSymbolOrNil].
 	self rebuildContent! !
+
+!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 14:00:19'!
+sharedTrailingWidth
+	"The trailing shortcut/chevron column reserved for EVERY item in this menu -- the widest such
+	track any sibling needs -- so all labels stop at one vertical line and shortcuts/chevrons
+	share a dedicated column even long labels never cross. Zero when no item has either."
+	| o |
+	o := self owner.
+	o isNil ifTrue: [^ self ownTrailingWidth].
+	^ o submorphs inject: 0 into: [:mx :m |
+		(m is: #MenuItemMorph) ifTrue: [mx max: m ownTrailingWidth] ifFalse: [mx]]! !
 
 !MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
 showsIcon
@@ -8062,7 +8459,7 @@ defaultLayerNumber
 		ifTrue: [40]
 		ifFalse: [super defaultLayerNumber]! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 06:54:26'!
 drawLabelOn: aCanvas
 	"Left-aligned, flat title. Begins a fixed gap past the traffic-light buttons;
 	its cap-height band is vertically centred on those buttons; truncates with a
@@ -8775,6 +9172,15 @@ squircleMinX: xMin maxX: xMax minY: yMin maxY: yMax radius: rIn
 	self squircleCornerAt: cornerTL incoming: ivecTL outgoing: ovecTL
 		p: p a: a b: b c: c d: d r: r arcK: arcK alpha: alpha.
 	self closePath! !
+
+!HybridCanvas methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 14:44:23'!
+drawWorldBackground: aWorldMorph rects: worldBackgroundDamage
+	"Draw worldBackgroundDamage rects for aWorldMorph. Do not include submorphs."
+	worldBackgroundDamage do: [ :r |
+		self newClipRect: r.
+		aWorldMorph drawOn: self.
+		self onMorphIdsDo: [
+			aWorldMorph drawOn: self ]].! !
 
 !HybridCanvas methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 14:07:26'!
 opaqueImage: aForm at: aPoint
