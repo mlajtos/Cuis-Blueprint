@@ -1,6 +1,6 @@
 'From Cuis7.9 [latest update: #7983] on 5 July 2026 at 2:51:48 pm'!
 'Description '!
-!provides: 'Blueprint' 1 301!
+!provides: 'Blueprint' 1 302!
 !requires: 'WebClient' 1 nil 1!
 SystemOrganization addCategory: #Blueprint!
 SystemOrganization addCategory: #'Blueprint-StateMachine'!
@@ -42,7 +42,7 @@ Animation class
 
 !classDefinition: #Animator category: #Blueprint!
 Object subclass: #Animator
-	instanceVariableNames: 'animations armedWorld armedAtMs'
+	instanceVariableNames: 'animations armedWorld armedAtMs nextDueMs'
 	classVariableNames: 'Default'
 	poolDictionaries: ''
 	category: 'Blueprint'!
@@ -576,6 +576,7 @@ rearm
 	armedWorld ifNotNil: [:w | w removeAlarm: #stepAnimationsAt: for: self].
 	armedWorld := nil.
 	armedAtMs := nil.
+	nextDueMs := nil.				"drop the running deadline too -- a fresh start must not chase old due times"
 	animations isEmpty ifFalse: [self scheduleNextFrame]! !
 
 !Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 15:46:54'!
@@ -588,13 +589,26 @@ scheduleNextFrame
 	clock-weirdness correction assumes alarms predate the boot). Without the watchdog
 	one lost alarm wedges every future animation. Must use Time localMillisecondClock --
 	the same clock the World cycle and MorphicAlarm use."
-	| w now |
+	| w now due |
 	w := self world.
 	w ifNil: [^ self].
 	now := Time localMillisecondClock.
 	(armedWorld == w and: [armedAtMs notNil and: [now - armedAtMs < 1000]]) ifTrue: [^ self].
 	armedWorld == w ifTrue: [w removeAlarm: #stepAnimationsAt: for: self].
-	w addAlarm: #stepAnimationsAt: withArguments: #() for: self at: now + self class frameMs.
+	"RUNNING DEADLINE, not now + frameMs. `now` is read AFTER this frame's work, so arming at
+	now + frameMs makes the true period work + frameMs + cycle-quantisation -- the alarm falls due
+	just past the cycle that could have served it and waits a whole extra one, every frame. Advancing
+	a deadline keeps the AVERAGE period at frameMs and lets a slow frame be absorbed by the next
+	instead of accumulating. Resync when more than one frame behind, so a stall (GC, a modal dialog,
+	a suspended image) can never make the animation sprint through a backlog of due frames."
+	nextDueMs := (nextDueMs isNil or: [nextDueMs + self class frameMs < now])
+		ifTrue: [now + self class frameMs]
+		ifFalse: [nextDueMs + self class frameMs].
+	"Ask HALF a frame early. The alarm can only fire when the world cycle next runs, so a deadline
+	landing mid-cycle is served a full cycle late; half a frame of lead absorbs ordinary cycle jitter
+	without ever running fast -- the world cycle, not this constant, still sets the ceiling."
+	due := nextDueMs - (self class frameMs // 2).
+	w addAlarm: #stepAnimationsAt: withArguments: #() for: self at: (due max: now).
 	armedWorld := w.
 	armedAtMs := now! !
 
