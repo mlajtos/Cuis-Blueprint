@@ -1,6 +1,6 @@
-'From Cuis7.9 [latest update: #8090] on 10 August 2026 at 8:21:41 pm'!
+'From Cuis7.9 [latest update: #8090] on 10 August 2026 at 10:50:02 pm'!
 'Description A desktop environment for Cuis Smalltalk: theme and typography scale, vector-drawn window chrome, menus with a command palette, a dock with virtual desktops (Stage), morph halos, and a small widget kit. Reskins the base image by overriding a number of Morphic methods -- see the README at https://github.com/mlajtos/Cuis-Blueprint.'!
-!provides: 'Blueprint' 1 302!
+!provides: 'Blueprint' 1 304!
 !requires: 'Cuis-Base' 79 8090 nil!
 !requires: 'WebClient' 1 nil 1!
 SystemOrganization addCategory: #Blueprint!
@@ -351,6 +351,16 @@ MenuItemMorph subclass: #CommandResultMorph
 CommandResultMorph class
 	instanceVariableNames: ''!
 
+!classDefinition: #MorphHaloButton category: #'Blueprint-Halo'!
+PluggableButtonMorph subclass: #MorphHaloButton
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Blueprint-Halo'!
+!classDefinition: 'MorphHaloButton class' category: #'Blueprint-Halo'!
+MorphHaloButton class
+	instanceVariableNames: ''!
+
 !classDefinition: #FillWidthScrollPane category: #Blueprint!
 PluggableScrollPane subclass: #FillWidthScrollPane
 	instanceVariableNames: ''
@@ -477,6 +487,9 @@ A clickable SymbolMorph: fires its action block on mouse-up inside. Optional #di
 
 !CommandResultMorph commentStamp: 'ML 10/Aug/2026, 6:20:51 pm (UTC)' prior: 0!
 One result row of the menu command palette: a flat MenuItemMorph with no content submorphs -- the dim breadcrumb path, the leaf command name and the matched-character highlights are drawn directly in #drawOn:. #fromCommand:matched: copies the source item's target, selector and arguments, so the inherited #invokeWithEvent: fires the original action; the selection pill and keyboard/mouse handling are inherited unchanged.!
+
+!MorphHaloButton commentStamp: 'ML 10/Aug/2026, 8:38:47 pm (UTC)' prior: 0!
+A window-control button that lives on the halo title pill (close / collapse / expand / menu). Exists solely to claim is: #HaloHandleMorph: since update 8014, base MouseButtonEvent>>dispatchIn: dismisses the open halo on any mouse-down whose top morph does not make that claim -- a plain PluggableButtonMorph would delete the halo (its own model) before its action could fire.!
 
 !FillWidthScrollPane commentStamp: '<historical>' prior: 0!
 A PluggableScrollPane whose scrollee always fills the pane width (vertical scrolling only): the inner morph is re-widened on every extent change. SymbolCatalog's grid lives in one.!
@@ -2425,10 +2438,14 @@ target: aMorph
 collapse
 	"A halo is a transient overlay on another morph, never a dock candidate; collapse is a no-op."! !
 
-!MorphHalo methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
+!MorphHalo methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 8:30:20 pm (UTC)'!
 is: aSymbol
-	"Behavioral tag so event dispatch recognizes a halo."
-	^ aSymbol == #MorphHalo or: [super is: aSymbol]! !
+	"#MorphHalo: Blueprint's own tag. #HaloHandleMorph: the base event-dispatch contract
+	(MouseButtonEvent>>dispatchIn:, update 8014) -- on mouse-down, the halo survives only if
+	the top morph under the cursor claims #HaloHandleMorph; anything else runs hand halo: nil.
+	The Blueprint halo body is interactive (drag = move target), so it claims furniture-hood.
+	Deliberately NOT #HaloMorph: that claim makes 8014 retarget body clicks to the target."
+	^ aSymbol == #MorphHalo or: [aSymbol == #HaloHandleMorph or: [super is: aSymbol]]! !
 
 !MorphHalo methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isIncludedInTaskbar
@@ -2643,6 +2660,11 @@ mouseEnter: evt
 	self kindIsInteractive
 		ifTrue: [Cursor currentCursor: (Cursor resizeForEdge: #left)]! !
 
+!MorphHaloScrubber methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 8:30:20 pm (UTC)'!
+is: aSymbol
+	"Halo furniture per the 8014 dispatch contract: mouse-down on me must not dismiss the halo."
+	^ aSymbol == #HaloHandleMorph or: [super is: aSymbol]! !
+
 !MorphHaloTitle methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 buttonGap
 	"Gap between adjacent control buttons."
@@ -2698,12 +2720,14 @@ textLeft
 	"Local x where the name text starts: horizontal edge inset + the button row + a gap."
 	^ self edgeInset + self buttonsWidth + (6 * DisplayScreen hostOSScaleFactor)! !
 
-!MorphHaloTitle methodsFor: 'building' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
+!MorphHaloTitle methodsFor: 'building' stamp: 'ML 10/Aug/2026, 8:38:47 pm (UTC)'!
 button: iconSel action: actSel balloon: aString model: aHalo
-	"Build one window-control button: a noButtonShape PluggableButtonMorph whose vector icon
-	(drawCloseIcon, etc.) draws the colored circle + glyph, wired to send actSel to the halo."
+	"Build one window-control button: a noButtonShape MorphHaloButton whose vector icon
+	(drawCloseIcon, etc.) draws the colored circle + glyph, wired to send actSel to the halo.
+	MorphHaloButton (not a plain PluggableButtonMorph) so the 8014 dispatch keeps the halo
+	alive while the button is being pressed."
 	| b |
-	b := PluggableButtonMorph model: aHalo action: actSel.
+	b := (Smalltalk at: #MorphHaloButton) model: aHalo action: actSel.
 	b iconDrawSelector: iconSel; noButtonShape; setBalloonText: aString.
 	self addMorph: b.
 	^ b! !
@@ -2770,6 +2794,11 @@ text: aString
 	self setProperty: #txt toValue: aString.
 	self fitText.
 	self redrawNeeded! !
+
+!MorphHaloTitle methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 8:30:20 pm (UTC)'!
+is: aSymbol
+	"Halo furniture per the 8014 dispatch contract: mouse-down on me must not dismiss the halo."
+	^ aSymbol == #HaloHandleMorph or: [super is: aSymbol]! !
 
 !SystemWindowResizeHalo methodsFor: 'config' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 cornerRadiusLogical
@@ -2979,6 +3008,11 @@ step
 stepTime
 	"Poll cadence during a drag-resize (ms)."
 	^ 16! !
+
+!SystemWindowResizeHalo methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 8:30:20 pm (UTC)'!
+is: aSymbol
+	"Halo furniture per the 8014 dispatch contract: mouse-down on me must not dismiss an open halo."
+	^ aSymbol == #HaloHandleMorph or: [super is: aSymbol]! !
 
 !AnalogClock methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize
@@ -6940,6 +6974,11 @@ minimumExtent
 			ifTrue: [hintW := hintW + (self hintSymbolFont widthOfString: self shiftGlyph)]].
 	^ ((16 * s) + w + hintW) @ (20 * s)! !
 
+!MorphHaloButton methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 8:38:47 pm (UTC)'!
+is: aSymbol
+	"Halo furniture per the 8014 dispatch contract: mouse-down on me must not dismiss the halo."
+	^ aSymbol == #HaloHandleMorph or: [super is: aSymbol]! !
+
 !FillWidthScrollPane methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 extentChanged: oldExtent
 	"Push my width into the scroller so it can re-flow (height stays whatever
@@ -8882,7 +8921,7 @@ showTaskbar
 				taskbar := TaskbarMorph newRow.
 				self addMorph: taskbar]]! !
 
-!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
+!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 8:49:24 pm (UTC)'!
 worldMenuSpec
 	"Spec for the menu and shortcut keys for the World.
 	See coment at Morph >> #getMenu
