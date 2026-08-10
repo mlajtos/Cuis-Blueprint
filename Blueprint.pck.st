@@ -1,6 +1,7 @@
-'From Cuis7.9 [latest update: #7983] on 5 July 2026 at 2:51:48 pm'!
-'Description '!
+'From Cuis7.9 [latest update: #8090] on 10 August 2026 at 8:21:41 pm'!
+'Description A desktop environment for Cuis Smalltalk: theme and typography scale, vector-drawn window chrome, menus with a command palette, a dock with virtual desktops (Stage), morph halos, and a small widget kit. Reskins the base image by overriding a number of Morphic methods -- see the README at https://github.com/mlajtos/Cuis-Blueprint.'!
 !provides: 'Blueprint' 1 302!
+!requires: 'Cuis-Base' 79 8090 nil!
 !requires: 'WebClient' 1 nil 1!
 SystemOrganization addCategory: #Blueprint!
 SystemOrganization addCategory: #'Blueprint-StateMachine'!
@@ -23,7 +24,7 @@ BlueprintPackage class
 !BlueprintPackage commentStamp: '<historical>' prior: 0!
 The package's install hook (CodePackage subclass, found by codePackageClass). postPackageInstall runs after the code loads and delegates to BlueprintTheme beCurrent -- fonts, typography, theme, Dock and Stage come up without any manual step.!
 
-!BlueprintPackage class methodsFor: 'installation' stamp: ''!
+!BlueprintPackage class methodsFor: 'installation' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 postPackageInstall
 	"Runs automatically at the end of filing in the Blueprint package. All activation logic lives in the
 	single robust entry point BlueprintTheme class>>beCurrent (icon font + typography + theme + Dock + Stage,
@@ -429,6 +430,9 @@ The catalog's "how big is a cell" swatch: a rounded outline square that tracks t
 !ClockHands commentStamp: '<historical>' prior: 0!
 The moving parts of AnalogClock: hour/minute/second hands stepped once a second, drawn as rounded strokes with the second hand in accent orange. Split from the face so per-second damage is just the hands region.!
 
+!MenuSearchMorph commentStamp: 'ML 10/Aug/2026, 6:20:51 pm (UTC)' prior: 0!
+The command palette's search row: a display-only strip at the top of the world menu showing a search glyph and the current query, drawn on the menu's dark chrome. It never takes keyboard focus -- the MenuMorph keeps focus, collects the keystrokes, and mirrors the query in via #matchString: (see MenuMorph>>rebuildResultsFor:).!
+
 !MenuTitleMorph commentStamp: '<historical>' prior: 0!
 The header block of a Blueprint menu: holds the bold title lines that MenuMorph>>addTitle: builds (question menus, informUserDuring: progress). Exists mainly to report its true size to the menu layout -- MenuMorph>>adjustSubmorphsLayout sizes rows from minimumExtent, and a plain box under-reports.!
 
@@ -471,6 +475,9 @@ A single icon glyph as a morph: a LabelMorph whose contents is one SymbolFont ch
 !SymbolButton commentStamp: '<historical>' prior: 0!
 A clickable SymbolMorph: fires its action block on mouse-up inside. Optional #discColor / #glyphScale properties draw a filled disc behind a scaled-down glyph (the SearchBar clear button). No button chrome -- the glyph (or disc) is the whole affordance.!
 
+!CommandResultMorph commentStamp: 'ML 10/Aug/2026, 6:20:51 pm (UTC)' prior: 0!
+One result row of the menu command palette: a flat MenuItemMorph with no content submorphs -- the dim breadcrumb path, the leaf command name and the matched-character highlights are drawn directly in #drawOn:. #fromCommand:matched: copies the source item's target, selector and arguments, so the inherited #invokeWithEvent: fires the original action; the selection pill and keyboard/mouse handling are inherited unchanged.!
+
 !FillWidthScrollPane commentStamp: '<historical>' prior: 0!
 A PluggableScrollPane whose scrollee always fills the pane width (vertical scrolling only): the inner morph is re-widened on every extent change. SymbolCatalog's grid lives in one.!
 
@@ -480,7 +487,7 @@ Unit tests for the Stage model: placements, space membership, switching, minimiz
 !StateMachineTest commentStamp: '<historical>' prior: 0!
 Unit tests for StateMachine: flat and nested transitions, initial-child resolution, is:/can: semantics, the event queue, and the turnstile/nested fixtures shared with the visualizer examples.!
 
-!Animation methodsFor: 'initialization' stamp: ''!
+!Animation methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 setMorph: aMorph block: aBlock duration: ms easing: anEasingBlock onDone: aDoneBlock
 	morph := aMorph.
 	block := aBlock.
@@ -488,15 +495,15 @@ setMorph: aMorph block: aBlock duration: ms easing: anEasingBlock onDone: aDoneB
 	easing := anEasingBlock.
 	onDone := aDoneBlock! !
 
-!Animation methodsFor: 'accessing' stamp: ''!
+!Animation methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 morph
 	^ morph! !
 
-!Animation methodsFor: 'accessing' stamp: ''!
+!Animation methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 onDone
 	^ onDone! !
 
-!Animation methodsFor: 'stepping' stamp: ''!
+!Animation methodsFor: 'stepping' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 tickAt: nowMs
 	"Apply this animation eased progress for the current frame. Answer true once finished.
 	startMs is captured lazily from the first frame so it always shares the caller clock
@@ -508,31 +515,31 @@ tickAt: nowMs
 	block value: (easing value: t).
 	^ false! !
 
-!Animation class methodsFor: 'instance creation' stamp: ''!
+!Animation class methodsFor: 'instance creation' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 on: aMorph do: aBlock duration: ms easing: anEasingBlock onDone: aDoneBlock
 	^ self new setMorph: aMorph block: aBlock duration: ms easing: anEasingBlock onDone: aDoneBlock! !
 
-!Animator methodsFor: 'initialization' stamp: 'ML 3/Jul/2026 13:57:27'!
+!Animator methodsFor: 'initialization' stamp: 'ML 3/Jul/2026, 11:57:27 am (UTC)'!
 initialize
 	super initialize.
 	animations := OrderedCollection new.
 	armedWorld := nil.
 	armedAtMs := nil! !
 
-!Animator methodsFor: 'accessing' stamp: ''!
+!Animator methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 animations
 	^ animations! !
 
-!Animator methodsFor: 'accessing' stamp: ''!
+!Animator methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 world
 	^ UISupervisor ui! !
 
-!Animator methodsFor: 'controlling' stamp: ''!
+!Animator methodsFor: 'controlling' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cancelFor: aMorph
 	"Drop any in-flight animation targeting aMorph (re-animating a morph supersedes the old)."
 	animations := animations reject: [:a | a morph == aMorph]! !
 
-!Animator methodsFor: 'animating' stamp: ''!
+!Animator methodsFor: 'animating' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 after: ms do: aBlock
 	"Fire aBlock ONCE after ms, with no per-frame work -- a one-shot timer riding the same World alarm loop
 	as the animations. Keyed to a private token rather than a morph, so a timer never dedups against another
@@ -541,7 +548,7 @@ after: ms do: aBlock
 	animations add: (Animation on: Object new do: [:t | ] duration: ms easing: [:t | t] onDone: aBlock).
 	self scheduleNextFrame! !
 
-!Animator methodsFor: 'animating' stamp: ''!
+!Animator methodsFor: 'animating' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 animate: aMorph using: aBlock duration: ms easing: easingSpec onDone: doneBlock
 	"Register a per-frame animation: aBlock receives eased progress (0..1) each frame and applies
 	it to aMorph. easingSpec is a Symbol (see easingNamed:) or a [:t|...] block. Any existing
@@ -552,12 +559,12 @@ animate: aMorph using: aBlock duration: ms easing: easingSpec onDone: doneBlock
 	animations add: (Animation on: aMorph do: aBlock duration: ms easing: ease onDone: doneBlock).
 	self scheduleNextFrame! !
 
-!Animator methodsFor: 'animating' stamp: ''!
+!Animator methodsFor: 'animating' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 animateMorph: aMorph using: aBlock duration: ms onDone: doneBlock
 	"Convenience matching the old Dock signature; defaults to cubic ease-in-out."
 	^ self animate: aMorph using: aBlock duration: ms easing: #cubicInOut onDone: doneBlock! !
 
-!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 15:46:54'!
+!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026, 1:46:54 pm (UTC)'!
 ensureTicking
 	"Heartbeat: if animations are pending, make sure a frame alarm is actually coming --
 	scheduleNextFrame's watchdog reclaims an arm that is stale (lost world, or era-shifted
@@ -566,7 +573,7 @@ ensureTicking
 	-- deferred-message tricks all drain in the same startup cycle and stay pre-shift."
 	animations isEmpty ifFalse: [self scheduleNextFrame]! !
 
-!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 14:00:52'!
+!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026, 12:00:52 pm (UTC)'!
 rearm
 	"Drop any pending alarm and re-arm freshly on the current world (no-op without
 	pending animations). For moments when a previously-scheduled alarm cannot be
@@ -579,7 +586,7 @@ rearm
 	nextDueMs := nil.				"drop the running deadline too -- a fresh start must not chase old due times"
 	animations isEmpty ifFalse: [self scheduleNextFrame]! !
 
-!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 15:46:54'!
+!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026, 1:46:54 pm (UTC)'!
 scheduleNextFrame
 	"Arm a one-shot World alarm for the next frame -- with a heartbeat watchdog. A
 	pending arm is trusted only if it is on the CURRENT world and recent; otherwise the
@@ -612,7 +619,7 @@ scheduleNextFrame
 	armedWorld := w.
 	armedAtMs := now! !
 
-!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 13:51:49'!
+!Animator methodsFor: 'stepping' stamp: 'ML 3/Jul/2026, 11:51:49 am (UTC)'!
 stepAnimationsAt: nowMs
 	"One frame (fired by the World alarm): advance every animation, fire onDone for finished
 	ones, then re-arm while any remain."
@@ -624,7 +631,7 @@ stepAnimationsAt: nowMs
 	finished do: [:a | a onDone ifNotNil: [:d | d value]].
 	animations isEmpty ifFalse: [self scheduleNextFrame]! !
 
-!Animator methodsFor: 'timers' stamp: ''!
+!Animator methodsFor: 'timers' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 sequence: steps
 	"Run a list of {delayMs. aBlock} steps in order: evaluate each block, then wait delayMs (which covers
 	that block's own animation) before starting the next. Built on after:do:. Empty list is a no-op. This is
@@ -635,22 +642,22 @@ sequence: steps
 	(step at: 2) value.
 	self after: (step at: 1) do: [self sequence: steps allButFirst]! !
 
-!Animator class methodsFor: 'accessing' stamp: ''!
+!Animator class methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 default
 	"The shared animation engine (lazily created). All Blueprint choreography runs on
 	this one instance so timing stays coherent and there is a single alarm loop."
 	^ Default ifNil: [Default := self new]! !
 
-!Animator class methodsFor: 'accessing' stamp: ''!
+!Animator class methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 reset
 	Default := nil! !
 
-!Animator class methodsFor: 'constants' stamp: ''!
+!Animator class methodsFor: 'constants' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 frameMs
 	"Target frame interval in ms (~60 fps)."
 	^ 16! !
 
-!Animator class methodsFor: 'easing' stamp: ''!
+!Animator class methodsFor: 'easing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 easingNamed: aSymbol
 	"Easing curves lifted from the cuis-xp Animation package (Raffaillac/Fernandes). Each
 	answers a block mapping parametric t in [0,1] to eased t. Unknown names fall back to linear."
@@ -662,7 +669,7 @@ easingNamed: aSymbol
 	aSymbol == #backOut ifTrue: [^ [:t | | u | u := t - 1.0. (u * u * ((2.70158 * u) + 1.70158)) + 1.0]].
 	^ [:t | t]! !
 
-!Animator class methodsFor: 'geometry' stamp: ''!
+!Animator class methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 bezierFrom: p0 to: p1 corner: cornerP at: t
 	"Quadratic Bezier point at parameter t (0..1) from p0 to p1, bending through control point
 	cornerP. The single home for every Blueprint fly-along-an-arc gesture (dock minimize/restore,
@@ -671,7 +678,7 @@ bezierFrom: p0 to: p1 corner: cornerP at: t
 	u := 1 - t.
 	^ (p0 * (u * u)) + (cornerP * (2 * u * t)) + (p1 * (t * t))! !
 
-!Animator class methodsFor: 'geometry' stamp: ''!
+!Animator class methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 centerOffsetOf: aMorph
 	"The UNSCALED origin->visual-centre vector for aMorph -- the input placeMorph:centeredAt:... needs to
 	place it back. Uses the EXACT affine image of the local centre (morphExtent/2) when the extent is
@@ -682,7 +689,7 @@ centerOffsetOf: aMorph
 	vc := me ifNotNil: [aMorph location transform: (me / 2)] ifNil: [aMorph findFullBoundsInOwner center].
 	^ (vc - aMorph morphPosition) / aMorph location scale! !
 
-!Animator class methodsFor: 'geometry' stamp: ''!
+!Animator class methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 dockCornerNear: dockP far: farP vertical: aBool
 	"The quadratic-Bezier control point that makes a fly between farP (out in the desktop) and dockP
 	(at the dock edge) leave/enter PERPENDICULAR to that edge. A vertical dock (left/right edge) wants
@@ -692,7 +699,7 @@ dockCornerNear: dockP far: farP vertical: aBool
 		ifTrue: [farP x @ dockP y]
 		ifFalse: [dockP x @ farP y]! !
 
-!Animator class methodsFor: 'placing' stamp: ''!
+!Animator class methodsFor: 'placing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 placeMorph: m centeredAt: aPoint scale: s rotation: r offset: centerOffset baseRotation: r0
 	"Set m's location so its visual centre lands EXACTLY on aPoint at scale s and rotation r. The UNSCALED
 	centre offset (captured at baseRotation r0) is rotated by (r - r0) -- via Point>>rotatedBy: -- so the
@@ -710,14 +717,14 @@ placeMorph: m centeredAt: aPoint scale: s rotation: r offset: centerOffset baseR
 	loc = m location ifTrue: [^ self].
 	m location: loc! !
 
-!SymbolFont class methodsFor: 'accessing' stamp: ''!
+!SymbolFont class methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 at: aName
 	"Answer the Character that represents the symbol named aName.
 	aName is a Symbol like #home, #search, #settings. Signal if not registered."
 	^ self at: aName ifAbsent: [self error: 'Unknown symbol: ', aName printString]
 ! !
 
-!SymbolFont class methodsFor: 'accessing' stamp: ''!
+!SymbolFont class methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 at: aName ifAbsent: aBlock
 	"Answer the Character that represents the symbol named aName, or evaluate
 	aBlock if no such symbol is registered."
@@ -726,24 +733,24 @@ at: aName ifAbsent: aBlock
 	^ Character value: cp
 ! !
 
-!SymbolFont class methodsFor: 'accessing' stamp: ''!
+!SymbolFont class methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 includesName: aName
 	^ self codepoints includesKey: aName asSymbol
 ! !
 
-!SymbolFont class methodsFor: 'accessing' stamp: ''!
+!SymbolFont class methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 names
 	"All registered symbol names (Symbols)."
 	^ self codepoints keys
 ! !
 
-!SymbolFont class methodsFor: 'rendering' stamp: ''!
+!SymbolFont class methodsFor: 'rendering' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 fontDescriptionPointSize: pointSize
 	"Answer the FontFamily TT description for the symbol font at the given size."
 	^ FontFamily familyName: self fontFamilyName pointSize: pointSize
 ! !
 
-!SymbolFont class methodsFor: 'font data' stamp: ''!
+!SymbolFont class methodsFor: 'font data' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 codepoints
 	"The name -> codepoint map, parsed once from the Tabler CSS and cached. The
 	download/registration dance (ensureFontData -- which stats files on disk) runs
@@ -754,17 +761,17 @@ codepoints
 		Codepoints := self loadFromCss: self cssFile].
 	^ Codepoints! !
 
-!SymbolFont class methodsFor: 'font data' stamp: ''!
+!SymbolFont class methodsFor: 'font data' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cssFile
 	"The CSS codepoint map file (in #symbolFontDir), downloaded on demand by #ensureFontData."
 	^ self symbolFontDir concatPathComponentsAsFile: #('tabler-icons.css')! !
 
-!SymbolFont class methodsFor: 'font data' stamp: ''!
+!SymbolFont class methodsFor: 'font data' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cssUrl
 	"Tabler Icons webfont CSS (name -> codepoint map), pinned version."
 	^ 'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.css'! !
 
-!SymbolFont class methodsFor: 'font data' stamp: ''!
+!SymbolFont class methodsFor: 'font data' stamp: 'ML 10/Aug/2026, 6:15:27 pm (UTC)'!
 ensureFontData
 	"Ensure the Tabler icon font (TTF glyphs) + CSS codepoint map are present, downloading them once from the
 	Tabler CDN into the image directory if absent, then registering the TTF so glyphs render. Idempotent.
@@ -780,18 +787,18 @@ ensureFontData
 		dir assureExistence.
 		resp := WebClient new httpGet: self ttfUrl do: [:req | req headerAt: 'Accept-Encoding' put: 'identity'].
 		resp stream ifNotNil: [:s | s binary].
-		ttfEntry binaryContents: resp content].
+		ttfEntry fileContents: resp content].
 	(FontFamily familyNamed: self fontFamilyName) isNil ifTrue: [
 		TrueTypeFontFamily readTrueTypeFontEntry: ttfEntry]! !
 
-!SymbolFont class methodsFor: 'font data' stamp: ''!
+!SymbolFont class methodsFor: 'font data' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 fontFamilyName
 	"The underlying TrueType family that provides the glyphs. This is exactly the family name that a fresh
 	TrueTypeFontFamily readTrueTypeFontEntry: of the Tabler TTF registers (its internal familyName), so the
 	#ensureFontData idempotency guard and the renderer (SymbolFont>>fontDescriptionPointSize:) both resolve it."
 	^ 'tabler-icons'! !
 
-!SymbolFont class methodsFor: 'font data' stamp: ''!
+!SymbolFont class methodsFor: 'font data' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 symbolFontDir
 	"The directory holding the Tabler assets: a SymbolFont download cache under the image directory, or a
 	TrueTypeFonts/TablerIcons directory beside the image if the files already live there (dev setup)."
@@ -802,12 +809,12 @@ symbolFontDir
 	(legacy exists and: [legacy fileNames includes: 'tabler-icons.css']) ifTrue: [^ legacy].
 	^ cache! !
 
-!SymbolFont class methodsFor: 'font data' stamp: ''!
+!SymbolFont class methodsFor: 'font data' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 ttfUrl
 	"Tabler Icons webfont TTF (glyphs), pinned version."
 	^ 'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/fonts/tabler-icons.ttf'! !
 
-!SymbolFont class methodsFor: 'private' stamp: ''!
+!SymbolFont class methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 loadFromCss: aFileEntry
 	"Parse a Font-Awesome-style CSS rule file into a Dictionary
 	name -> codepoint Integer. subStrings: wants a string of delimiters,
@@ -819,7 +826,7 @@ loadFromCss: aFileEntry
 	^ dict
 ! !
 
-!SymbolFont class methodsFor: 'private' stamp: ''!
+!SymbolFont class methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 parseRule: rule into: dict
 	"Parse one CSS rule of the form NAME{ content...HEX...}. The font-specific
 	prefix .ti- is handled here and not exposed by the public API.
@@ -841,29 +848,29 @@ parseRule: rule into: dict
 	(dict values includes: codepoint) ifTrue: [^ self].
 	dict at: (rule copyFrom: tiAt + 4 to: nameEnd - 1) asSymbol put: codepoint! !
 
-!Placement methodsFor: 'accessing' stamp: ''!
+!Placement methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 home
 	"The window's full-size location, remembered by a view at displacement time so the window can be put back."
 	^ home! !
 
-!Placement methodsFor: 'accessing' stamp: ''!
+!Placement methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 home: aLocation
 	home := aLocation! !
 
-!Placement methodsFor: 'accessing' stamp: ''!
+!Placement methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isMinimized
 	"Minimized = off-stage: no space holds the window (it lives in a dock tile)."
 	^ space isNil! !
 
-!Placement methodsFor: 'accessing' stamp: ''!
+!Placement methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 space
 	^ space! !
 
-!Placement methodsFor: 'accessing' stamp: ''!
+!Placement methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 space: aSpace
 	space := aSpace! !
 
-!Placement methodsFor: 'printing' stamp: ''!
+!Placement methodsFor: 'printing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 printOn: aStream
 	aStream nextPutAll: 'Placement('.
 	self isMinimized
@@ -871,24 +878,24 @@ printOn: aStream
 		ifFalse: [aStream print: space].
 	aStream nextPutAll: ')'! !
 
-!Placement class methodsFor: 'instance creation' stamp: ''!
+!Placement class methodsFor: 'instance creation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 in: aSpace
 	"A fresh placement: lives in aSpace, no remembered home yet."
 	^ self new space: aSpace! !
 
-!Space methodsFor: 'accessing' stamp: ''!
+!Space methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 name
 	^ name! !
 
-!Space methodsFor: 'accessing' stamp: ''!
+!Space methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 name: aString
 	name := aString! !
 
-!Space methodsFor: 'printing' stamp: ''!
+!Space methodsFor: 'printing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 printOn: aStream
 	aStream nextPutAll: 'Space('; nextPutAll: (name ifNil: ['unnamed']); nextPutAll: ')'! !
 
-!Stage methodsFor: 'initialization' stamp: 'ML 3/Jul/2026 14:41:04'!
+!Stage methodsFor: 'initialization' stamp: 'ML 3/Jul/2026, 12:41:04 pm (UTC)'!
 initialize
 	super initialize.
 	placements := IdentityDictionary new.
@@ -901,7 +908,7 @@ initialize
 	mode := self modeChart.
 	mode onTransition: [:m | (m is: #settled) ifTrue: [self drainPending]]! !
 
-!Stage methodsFor: 'initialization' stamp: ''!
+!Stage methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 modeChart
 	"What the stage can be doing. Completion events (#settle #opened #closed) come from views when
 	their animations finish; missing edges ARE the guards (e.g. no #openOverview while switching)."
@@ -918,45 +925,45 @@ modeChart
 				#visible -> { #dismiss -> #closing. #reflow -> #opening }.
 				#closing -> { #closed -> #live } } } }! !
 
-!Stage methodsFor: 'accessing' stamp: ''!
+!Stage methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 active
 	^ active! !
 
-!Stage methodsFor: 'accessing' stamp: ''!
+!Stage methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mode
 	^ mode! !
 
-!Stage methodsFor: 'accessing' stamp: ''!
+!Stage methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 shown
 	"The space whose windows are materialized on the desktop right now. Lags `active` while a switch
 	flies; views reconcile shown toward active, then report switchSettled which snaps them equal."
 	^ shown! !
 
-!Stage methodsFor: 'accessing' stamp: ''!
+!Stage methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 spaces
 	^ spaces! !
 
-!Stage methodsFor: 'queries' stamp: ''!
+!Stage methodsFor: 'queries' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isInFlight: aWindow
 	^ flights includes: aWindow! !
 
-!Stage methodsFor: 'queries' stamp: ''!
+!Stage methodsFor: 'queries' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 minimizedWindows
 	^ placements keys select: [:w | (placements at: w) isMinimized]! !
 
-!Stage methodsFor: 'queries' stamp: ''!
+!Stage methodsFor: 'queries' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 placementOf: aWindow
 	^ placements at: aWindow ifAbsent: [nil]! !
 
-!Stage methodsFor: 'queries' stamp: ''!
+!Stage methodsFor: 'queries' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 windows
 	^ placements keys! !
 
-!Stage methodsFor: 'queries' stamp: ''!
+!Stage methodsFor: 'queries' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 windowsIn: aSpace
 	^ placements keys select: [:w | (placements at: w) space == aSpace]! !
 
-!Stage methodsFor: 'events' stamp: ''!
+!Stage methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 forget: aWindow
 	"A window leaves (closed): its placement goes with it. No mode guard -- a window may die any time."
 	(placements removeKey: aWindow ifAbsent: [nil]) ifNil: [^ self].
@@ -964,7 +971,7 @@ forget: aWindow
 	self reconcile.
 	self notify: #forgotten with: aWindow! !
 
-!Stage methodsFor: 'events' stamp: ''!
+!Stage methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 manage: aWindow
 	"A window arrives (opened or adopted): it lives in the active space."
 	(placements includesKey: aWindow) ifTrue: [^ self].
@@ -972,7 +979,7 @@ manage: aWindow
 	self reconcile.
 	self notify: #managed with: aWindow! !
 
-!Stage methodsFor: 'events' stamp: ''!
+!Stage methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 switchSettled
 	"A view reports the switch flight finished: shown snaps to active, then settling drains any
 	queued switch (which may immediately re-enter #switching)."
@@ -981,7 +988,7 @@ switchSettled
 	self notify: #settled with: active.
 	mode fire: #settle! !
 
-!Stage methodsFor: 'events' stamp: 'ML 3/Jul/2026 15:38:11'!
+!Stage methodsFor: 'events' stamp: 'ML 3/Jul/2026, 1:38:11 pm (UTC)'!
 switchTo: aSpace
 	"Point `active` at aSpace and enter #switching; views fly windows to make `shown` catch up.
 	While busy the request waits -- last one wins -- and drains on the next transition into
@@ -996,11 +1003,11 @@ switchTo: aSpace
 	mode fire: #switch.
 	self notify: #switch with: aSpace! !
 
-!Stage methodsFor: 'private' stamp: ''!
+!Stage methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drainPending
 	pending ifNotNil: [:p | pending := nil. self switchTo: p]! !
 
-!Stage methodsFor: 'private' stamp: ''!
+!Stage methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 reconcile
 	"Keep exactly one empty space -- the fresh desktop you can always switch to. Drop surplus
 	empties (never the active one); spawn one when every space holds windows. Views hear #spaces."
@@ -1014,13 +1021,13 @@ reconcile
 			empties do: [:sp | sp == keeper ifFalse: [spaces remove: sp. changed := true]]].
 	changed ifTrue: [self notify: #spaces with: nil]! !
 
-!Stage methodsFor: 'views' stamp: ''!
+!Stage methodsFor: 'views' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 flightBegan: aWindow
 	"A view reports aWindow is being flown between placements. Pure annotation (desktop scans skip
 	in-flight windows); all CONTROL flow lives in the mode chart."
 	flights add: aWindow! !
 
-!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026 15:38:11'!
+!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026, 1:38:11 pm (UTC)'!
 flightEnded: aWindow
 	"A view reports aWindow's flight landed. When the LAST flight lands on a settled stage,
 	drain any switch that queued while windows were airborne (switchTo: defers on flights --
@@ -1028,17 +1035,17 @@ flightEnded: aWindow
 	flights remove: aWindow ifAbsent: [].
 	(flights isEmpty and: [mode is: #settled]) ifTrue: [self drainPending]! !
 
-!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026 14:41:04'!
+!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026, 12:41:04 pm (UTC)'!
 notify: event with: arg
 	views valuesDo: [:v | v value: event value: arg]! !
 
-!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026 14:41:04'!
+!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026, 12:41:04 pm (UTC)'!
 onChange: aBlock
 	"Anonymous subscription (unique key): kept for listeners that are never recreated.
 	Views with a lifecycle should use onChange:for: and a stable key."
 	views at: Object new put: aBlock! !
 
-!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026 14:41:04'!
+!Stage methodsFor: 'views' stamp: 'ML 3/Jul/2026, 12:41:04 pm (UTC)'!
 onChange: aBlock for: aKey
 	"Subscribe a view under aKey: aBlock gets (eventSymbol, argument) after every model
 	change -- #managed/#forgotten/#minimized/#restored with the window, #switch/#settled
@@ -1048,7 +1055,7 @@ onChange: aBlock for: aKey
 	placements."
 	views at: aKey put: aBlock! !
 
-!Stage methodsFor: 'windows' stamp: ''!
+!Stage methodsFor: 'windows' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 minimize: aWindow
 	"Minimize = off-stage: the window leaves its space for the dock. Reconciling keeps exactly one
 	empty space (minimizing a space's last window would otherwise strand a surplus empty)."
@@ -1057,7 +1064,7 @@ minimize: aWindow
 		self reconcile.
 		self notify: #minimized with: aWindow]! !
 
-!Stage methodsFor: 'windows' stamp: ''!
+!Stage methodsFor: 'windows' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 move: aWindow to: aSpace
 	"Move a window to an arbitrary space -- the fifth space verb beside manage:/forget:/minimize:/restore:. Unlike
 	restore: (always the active space) this targets ANY space, so a window can be pushed to a desktop the user is
@@ -1071,7 +1078,7 @@ move: aWindow to: aSpace
 		self reconcile.
 		self notify: #moved with: aWindow]! !
 
-!Stage methodsFor: 'windows' stamp: ''!
+!Stage methodsFor: 'windows' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 restore: aWindow
 	"Un-minimize: the window rejoins the ACTIVE space -- it comes back where the user is, not where
 	it left. Reconciling spawns a fresh empty space when the restore fills the last one."
@@ -1080,7 +1087,7 @@ restore: aWindow
 		self reconcile.
 		self notify: #restored with: aWindow]! !
 
-!Stage methodsFor: 'real estate' stamp: ''!
+!Stage methodsFor: 'real estate' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 arena
 	"The usable screen area: the world minus every reserved edge strip (the dock's, today). The
 	single source of truth for window real estate -- initial frames, fullscreen bounds and the
@@ -1096,7 +1103,7 @@ arena
 		strut key == #bottom ifTrue: [a := a origin corner: a right @ (a bottom - t)]].
 	^ a! !
 
-!Stage methodsFor: 'real estate' stamp: ''!
+!Stage methodsFor: 'real estate' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initialFrameFor: anExtent
 	"A staggered frame for a new window of anExtent: candidate spots spiral out level by level from
 	each of the four arena corners (grid-spaced, DPI-scaled); the first whose anchor corner is not
@@ -1120,7 +1127,7 @@ initialFrameFor: anExtent
 				ifTrue: [^ (frame aligned: (frame perform: cornerSel) with: putative) translatedAndSquishedToBeWithin: a]]].
 	^ (a origin extent: anExtent) translatedAndSquishedToBeWithin: a! !
 
-!Stage methodsFor: 'real estate' stamp: 'ML 3/Jul/2026 14:41:04'!
+!Stage methodsFor: 'real estate' stamp: 'ML 3/Jul/2026, 12:41:04 pm (UTC)'!
 reserve: anObject
 	"Register a screen-edge reserver: an object answering #screenStrut (an edge -> thickness
 	association). The arena excludes every reserved strip. One reservation per CLASS: a
@@ -1128,7 +1135,7 @@ reserve: anObject
 	reservations := reservations reject: [:r | r class == anObject class].
 	reservations add: anObject! !
 
-!Stage methodsFor: 'real estate' stamp: ''!
+!Stage methodsFor: 'real estate' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 settleWindowsIntoArena
 	"Nudge every shown window back inside the arena, animated -- called when a reservation moves
 	(e.g. the dock snaps to another edge). Windows already inside don't move. Quiet unless the
@@ -1145,7 +1152,7 @@ settleWindowsIntoArena
 				e := f extent + ((t extent - f extent) * k).
 				w morphPosition: o; morphExtent: e] duration: 300 easing: #cubicInOut onDone: []]]! !
 
-!Stage methodsFor: 'real estate' stamp: ''!
+!Stage methodsFor: 'real estate' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 standardWindowExtent
 	"The default extent for a new window: a generous code-font-derived size (roughly 52 x 40
 	characters), capped so a window placed at any stagger level still fits the arena (the 340 is
@@ -1154,16 +1161,16 @@ standardWindowExtent
 	s := DisplayScreen hostOSScaleFactor.
 	^ ((self arena extent - (340 * s)) min: 52 @ 40 * (Preferences at: #standardCodeFont) lineSpacing) rounded! !
 
-!Stage class methodsFor: 'instance creation' stamp: ''!
+!Stage class methodsFor: 'instance creation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 reset
 	Default := nil! !
 
-!Stage class methodsFor: 'accessing' stamp: ''!
+!Stage class methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 default
 	"The live singleton -- the model every Blueprint window view renders from."
 	^ Default ifNil: [Default := self new]! !
 
-!StateMachine methodsFor: 'runtime' stamp: ''!
+!StateMachine methodsFor: 'runtime' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drainQueue
 	"After a transition, fire the first queued event that is now legal (which itself drains again), so a
 	backlog clears as states allow. Events that never become legal simply wait."
@@ -1171,18 +1178,18 @@ drainQueue
 	fireable := queued detect: [:e | self can: e] ifNone: [nil].
 	fireable ifNotNil: [queued remove: fireable. self fire: fireable]! !
 
-!StateMachine methodsFor: 'runtime' stamp: ''!
+!StateMachine methodsFor: 'runtime' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 fireOrQueue: event
 	"Fire event now if legal; otherwise remember it and auto-fire when the machine next reaches a state
 	that accepts it. The root fix for an event (e.g. a group switch-back) requested while busy -- nothing
 	is dropped."
 	(self fire: event) ifFalse: [queued addLast: event]! !
 
-!StateMachine methodsFor: 'runtime' stamp: ''!
+!StateMachine methodsFor: 'runtime' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 state
 	^ current! !
 
-!StateMachine methodsFor: 'introspection' stamp: ''!
+!StateMachine methodsFor: 'introspection' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 allTransitions
 	"Every transition as a { from. event. to } triple -- the data a visualiser or Mermaid/DOT export consumes."
 	| out |
@@ -1191,32 +1198,32 @@ allTransitions
 		evMap keysAndValuesDo: [:ev :to | out add: { from. ev. to }]].
 	^ out asArray! !
 
-!StateMachine methodsFor: 'introspection' stamp: ''!
+!StateMachine methodsFor: 'introspection' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 eventsFrom: aState
 	^ (transitions at: aState ifAbsent: [Dictionary new]) keys! !
 
-!StateMachine methodsFor: 'introspection' stamp: ''!
+!StateMachine methodsFor: 'introspection' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initial
 	"The starting state -- e.g. for a diagram's [*] entry edge."
 	^ initial! !
 
-!StateMachine methodsFor: 'introspection' stamp: ''!
+!StateMachine methodsFor: 'introspection' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialChildOf: aState
 	"The child state a compound enters by default (its #initial), or nil for a leaf. For tooling/visualisers."
 	^ initialOf at: aState ifAbsent: [nil]! !
 
-!StateMachine methodsFor: 'introspection' stamp: ''!
+!StateMachine methodsFor: 'introspection' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 onTransition: aBlock
 	"XState subscribe: aBlock is evaluated with this machine after every successful transition. The hook a
 	live visualiser uses to repaint, or a client to redrawNeeded."
 	observers add: aBlock! !
 
-!StateMachine methodsFor: 'introspection' stamp: ''!
+!StateMachine methodsFor: 'introspection' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 parentOf: aState
 	"The compound state containing aState, or nil at the root -- for tooling/visualisers."
 	^ parent at: aState ifAbsent: [nil]! !
 
-!StateMachine methodsFor: 'introspection' stamp: ''!
+!StateMachine methodsFor: 'introspection' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 path
 	"The current configuration root-first, e.g. #(live settled) -- the leaf plus its ancestors."
 	| s out |
@@ -1225,7 +1232,7 @@ path
 	[s notNil] whileTrue: [out addFirst: s. s := parent at: s ifAbsent: [nil]].
 	^ out asArray! !
 
-!StateMachine methodsFor: 'introspection' stamp: ''!
+!StateMachine methodsFor: 'introspection' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 possibleEvents
 	"The events that would transition from here -- the leaf's own plus everything inherited from ancestors."
 	| s evs |
@@ -1236,7 +1243,7 @@ possibleEvents
 		s := parent at: s ifAbsent: [nil]].
 	^ evs! !
 
-!StateMachine methodsFor: 'introspection' stamp: ''!
+!StateMachine methodsFor: 'introspection' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 states
 	"Every state mentioned in the spec (sources and targets) -- for tooling/validation."
 	| s |
@@ -1244,7 +1251,7 @@ states
 	transitions keysAndValuesDo: [:from :evMap | s add: from. evMap valuesDo: [:to | s add: to]].
 	^ s! !
 
-!StateMachine methodsFor: 'private' stamp: ''!
+!StateMachine methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 installStates: aSpec under: aParent
 	"Walk a declarative spec (stateName -> entries) installing each state. Two RESERVED keys make a state
 	compound: #initial -> childState and #states -> { nested spec }; #on -> {...} wraps plain transitions
@@ -1259,7 +1266,7 @@ installStates: aSpec under: aParent
 		(dict removeKey: #on ifAbsent: [nil]) ifNotNil: [:on | on do: [:a | dict at: a key put: a value]].
 		transitions at: assoc key put: dict]! !
 
-!StateMachine methodsFor: 'private' stamp: ''!
+!StateMachine methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 leafFor: aState
 	"Entering a compound state descends through its #initial children until a leaf -- current is always a leaf."
 	| s |
@@ -1267,7 +1274,7 @@ leafFor: aState
 	[initialOf includesKey: s] whileTrue: [s := initialOf at: s].
 	^ s! !
 
-!StateMachine methodsFor: 'private' stamp: ''!
+!StateMachine methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 setInitial: aState states: aSpec
 	initial := aState.
 	observers := OrderedCollection new.
@@ -1278,7 +1285,7 @@ setInitial: aState states: aSpec
 	self installStates: aSpec under: nil.
 	current := self leafFor: aState! !
 
-!StateMachine methodsFor: 'events' stamp: ''!
+!StateMachine methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 fire: event
 	"XState send: take the (state, event) transition if one exists -- looked up on the current leaf first,
 	then bubbling up the parent chain (a child shadows its parent for the same event). On a hit: enter the
@@ -1296,13 +1303,13 @@ fire: event
 		s := parent at: s ifAbsent: [nil]].
 	^ false! !
 
-!StateMachine methodsFor: 'events' stamp: ''!
+!StateMachine methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 reset
 	"Return to the initial state (descending to its leaf; no observer notification) and clear queued events."
 	current := self leafFor: initial.
 	queued := OrderedCollection new! !
 
-!StateMachine methodsFor: 'testing' stamp: ''!
+!StateMachine methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 can: event
 	"XState snapshot.can: is event a legal transition right now -- on the leaf or any ancestor? (No firing.)"
 	| s |
@@ -1312,7 +1319,7 @@ can: event
 		s := parent at: s ifAbsent: [nil]].
 	^ false! !
 
-!StateMachine methodsFor: 'testing' stamp: ''!
+!StateMachine methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 is: aSymbol
 	"XState snapshot.matches: true for the current leaf AND any of its ancestors -- (m is: #overview) holds
 	while the machine sits in #overview's #visible child."
@@ -1323,7 +1330,7 @@ is: aSymbol
 		s := parent at: s ifAbsent: [nil]].
 	^ false! !
 
-!StateMachine class methodsFor: 'instance creation' stamp: ''!
+!StateMachine class methodsFor: 'instance creation' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initial: aState states: aSpec
 	"Build a machine from a declarative XState-shaped spec: aSpec is a collection of associations
 	stateName -> entries, where each entry is event -> targetState. Two RESERVED keys make a state
@@ -1334,77 +1341,77 @@ initial: aState states: aSpec
 	Answers a machine settled at aState (descended to its initial leaf if compound)."
 	^ self new setInitial: aState states: aSpec! !
 
-!BlueprintTheme methodsFor: 'accent' stamp: ''!
+!BlueprintTheme methodsFor: 'accent' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 focusIndicator
 	^ self accentColor! !
 
-!BlueprintTheme methodsFor: 'accent' stamp: ''!
+!BlueprintTheme methodsFor: 'accent' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 menuHighlight
 	^ self accentColor! !
 
-!BlueprintTheme methodsFor: 'accent' stamp: ''!
+!BlueprintTheme methodsFor: 'accent' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 textHighlight
 	^ self accentColor! !
 
-!BlueprintTheme methodsFor: 'colors' stamp: ''!
+!BlueprintTheme methodsFor: 'colors' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 paneBackgroundFrom: aColor
 	"Blueprint: body color matches frame color (single-tone chrome — drop the
 	default veryMuchLighter step so chrome reads as one flat panel)."
 	^ aColor
 ! !
 
-!BlueprintTheme methodsFor: 'colors' stamp: ''!
+!BlueprintTheme methodsFor: 'colors' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 textPane
 	"Blueprint: translucent white, so the window body colour tints through and
 	the text pane adapts to the window colour."
 	^ Color white alpha: 0.5! !
 
-!BlueprintTheme methodsFor: 'scrollbars' stamp: ''!
+!BlueprintTheme methodsFor: 'scrollbars' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 scrollbarColor
 	"Blueprint: scrollbar track is invisible — only the slider shows."
 	^ Color transparent
 ! !
 
-!BlueprintTheme methodsFor: 'scrollbars' stamp: ''!
+!BlueprintTheme methodsFor: 'scrollbars' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 scrollbarShowButtons
 	"Blueprint: drop the up/down arrow buttons — clean track + slider only."
 	^ false
 ! !
 
-!BlueprintTheme methodsFor: 'scrollbars' stamp: ''!
+!BlueprintTheme methodsFor: 'scrollbars' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 scrollbarSliderShadowColor
 	"Blueprint: no shadow at all — slider drags clean."
 	^ Color transparent
 ! !
 
-!BlueprintTheme methodsFor: 'metrics' stamp: ''!
+!BlueprintTheme methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 buttonPaneHeight
 	"32 logical pt, answered as physical px (consumers use it raw)."
 	^ 32 * DisplayScreen hostOSScaleFactor! !
 
-!BlueprintTheme methodsFor: 'metrics' stamp: ''!
+!BlueprintTheme methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 layoutAdjusterThickness
 	"4 logical pt, answered as physical px (consumers use it raw)."
 	^ 4 * DisplayScreen hostOSScaleFactor! !
 
-!BlueprintTheme methodsFor: 'metrics' stamp: ''!
+!BlueprintTheme methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 roundedButtonRadius
 	"8 logical pt, answered as physical px -- PluggableButtonMorph>>drawRoundLookOn:
 	uses it raw in canvas space. (The rounded*Radius siblings for windows/menus/minis
 	are LOGICAL; this one predates that convention and its consumer is base code.)"
 	^ 8 * DisplayScreen hostOSScaleFactor! !
 
-!BlueprintTheme methodsFor: 'metrics' stamp: ''!
+!BlueprintTheme methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 roundedWindowRadius
 	"16 px window corner — softer than the Theme default 8."
 	^ 16! !
 
-!BlueprintTheme methodsFor: 'metrics' stamp: ''!
+!BlueprintTheme methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 scrollbarThickness
 	"16 logical pt, answered as physical px (ScrollBar and friends use it raw)."
 	^ 16 * DisplayScreen hostOSScaleFactor! !
 
-!BlueprintTheme methodsFor: 'metrics' stamp: ''!
+!BlueprintTheme methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 titleBarButtonsExtent
 	"16 logical pt square, answered as physical px -- SystemWindow>>rescaleButtons
 	sets it as a raw morphExtent."
@@ -1412,13 +1419,13 @@ titleBarButtonsExtent
 	e := 16 * DisplayScreen hostOSScaleFactor.
 	^ e @ e! !
 
-!BlueprintTheme methodsFor: 'metrics' stamp: ''!
+!BlueprintTheme methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 windowBorderWidth
 	"Blueprint: no literal border; squircle chrome handles the visual edge.
 	Title-bar layout now uses chromePadding instead of borderWidth."
 	^ 0! !
 
-!BlueprintTheme methodsFor: 'tool colors' stamp: ''!
+!BlueprintTheme methodsFor: 'tool colors' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 workspace
 	"Workspace window frame: muted moss-olive. The vanilla theme uses a high-saturation
 	chartreuse (H=60 S=0.73 V=0.72); this picks a gentler hue with lower saturation so
@@ -1427,7 +1434,7 @@ workspace
 		ifTrue: [self defaultWindowColor]
 		ifFalse: [Color h: 75 s: 0.35 v: 0.55]! !
 
-!BlueprintTheme methodsFor: 'typography' stamp: ''!
+!BlueprintTheme methodsFor: 'typography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 fontAt: step
 	"Cached type-scale lookup: glyph-heavy paths (menu building) ask for fonts
 	thousands of times per frame, and the uncached computation (float pow + family
@@ -1438,7 +1445,7 @@ fontAt: step
 	FontCache isNil ifTrue: [FontCache := Dictionary new].
 	^ FontCache at: key ifAbsentPut: [super fontAt: step]! !
 
-!BlueprintTheme class methodsFor: 'tile' stamp: ''!
+!BlueprintTheme class methodsFor: 'tile' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 buildTile
 	"Build a scale-free blueprint tile: 1000 px square with four nested grids at 8/40/200/1000.
 	Lines are painted smallest first so larger scales overlay at intersections."
@@ -1464,18 +1471,18 @@ buildTile
 	tile bits pin.
 	^ tile! !
 
-!BlueprintTheme class methodsFor: 'tile' stamp: ''!
+!BlueprintTheme class methodsFor: 'tile' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 tile
 	"Lazy, cached. Force a rebuild by setting Tile := nil."
 	Tile ifNil: [Tile := self buildTile].
 	^ Tile! !
 
-!BlueprintTheme class methodsFor: 'class initialization' stamp: ''!
+!BlueprintTheme class methodsFor: 'class initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize
 	"BlueprintTheme initialize"
 	Smalltalk addToStartUpList: self! !
 
-!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026 15:38:57'!
+!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026, 1:38:57 pm (UTC)'!
 applyLookWhenWorldReady
 	"The world-facing half of activation: typography, theme + chrome + Dock + Stage
 	(super beCurrent -> currentTheme:), then the Animator rearm one cycle later.
@@ -1490,7 +1497,7 @@ applyLookWhenWorldReady
 	super beCurrent.
 	UISupervisor whenUIinSafeState: [Animator default rearm]! !
 
-!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026 15:38:57'!
+!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026, 1:38:57 pm (UTC)'!
 beCurrent
 	"The single, robust entry point for activating the Blueprint desktop environment:
 	 (1) ensure the Tabler icon font is downloaded, registered, and its codepoints parsed;
@@ -1507,7 +1514,7 @@ beCurrent
 		ifFalse: [self applyLookWhenWorldReady].
 	^ self! !
 
-!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026 16:37:07'!
+!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026, 2:37:07 pm (UTC)'!
 currentTheme: aTheme
 	"Apply the standard Theme machinery, then install the blueprint tile and the Dock
 	(via installDockIn:) as the world taskbar, connected to the Stage."
@@ -1519,7 +1526,7 @@ currentTheme: aTheme
 		w fullRepaintNeeded].
 	^ aTheme! !
 
-!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026 16:36:57'!
+!BlueprintTheme class methodsFor: 'activation' stamp: 'ML 3/Jul/2026, 2:36:57 pm (UTC)'!
 installDockIn: aWorld
 	"Install a freshly wired Dock as aWorld's taskbar: existing desktop windows join the
 	active space, the dock listens for Stage changes, and the cards mirror the spaces.
@@ -1532,7 +1539,7 @@ installDockIn: aWorld
 	aWorld taskbar connectStage.
 	aWorld taskbar syncCards! !
 
-!BlueprintTheme class methodsFor: 'typography' stamp: ''!
+!BlueprintTheme class methodsFor: 'typography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 applyTypography
 	"Push the type scale into the UI. The Cuis preference fonts (list/menu/code/button)
 	get the body step (0) via PreferenceSet defaultFontSize: -- which also refreshes
@@ -1546,13 +1553,13 @@ applyTypography
 	Preferences name: #windowTitleFont category: #font value: (proto fontAt: 1).
 	UISupervisor ui ifNotNil: [:w | w fontPreferenceChanged]! !
 
-!BlueprintTheme class methodsFor: 'typography' stamp: ''!
+!BlueprintTheme class methodsFor: 'typography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 fontPointSize
 	"The base UI font size in LOGICAL points (1rem). Everything text-sized derives from it via
 	PreferenceSet defaultFontSize:. Default 12. Set with #fontPointSize: to zoom the whole UI."
 	^ FontPointSize ifNil: [12]! !
 
-!BlueprintTheme class methodsFor: 'typography' stamp: ''!
+!BlueprintTheme class methodsFor: 'typography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 fontPointSize: aLogicalPointSize
 	"Set the base (1rem) UI font size in logical points and re-apply live -- the one knob to zoom the UI.
 	Persists in the image; #beCurrent honours it (so activation no longer clobbers a chosen size)."
@@ -1561,7 +1568,7 @@ fontPointSize: aLogicalPointSize
 		ifTrue: [UISupervisor whenUIinSafeState: [self applyTypography]]
 		ifFalse: [self applyTypography]! !
 
-!BlueprintTheme class methodsFor: 'system startup' stamp: 'ML 4/Jul/2026 16:00:00'!
+!BlueprintTheme class methodsFor: 'system startup' stamp: 'ML 4/Jul/2026, 2:00:00 pm (UTC)'!
 fitDisplay
 	"Refit the desktop to the current display geometry: re-tile the wallpaper and
 	reflow the Dock. Geometry only -- never re-runs activation. (Activation itself
@@ -1573,7 +1580,7 @@ fitDisplay
 	w backgroundImage: (self tileComposedTo: Display extent).
 	(w taskbar isKindOf: Dock) ifTrue: [w taskbar reflow]! !
 
-!BlueprintTheme class methodsFor: 'system startup' stamp: 'ML 3/Jul/2026 16:37:07'!
+!BlueprintTheme class methodsFor: 'system startup' stamp: 'ML 3/Jul/2026, 2:37:07 pm (UTC)'!
 startUp: resuming
 	"Image startup hook (registered in the startup list): refit the desktop to the
 	current display geometry -- it may differ from the one the image was saved on.
@@ -1582,7 +1589,7 @@ startUp: resuming
 	Theme current class == self ifFalse: [^ self].
 	self fitDisplay! !
 
-!BlueprintTheme class methodsFor: 'assets' stamp: 'ML 4/Jul/2026 13:43:19'!
+!BlueprintTheme class methodsFor: 'assets' stamp: 'ML 4/Jul/2026, 11:43:19 am (UTC)'!
 tileComposedTo: anExtent
 	"The wallpaper as one display-sized Form: the blueprint tile pre-composed so world
 	background repair is a single copy instead of re-tiling ~5M px per frame.
@@ -1608,7 +1615,7 @@ tileComposedTo: anExtent
 		ComposedTile := f].
 	^ ComposedTile! !
 
-!Popover methodsFor: 'drawing' stamp: ''!
+!Popover methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawOn: aCanvas
 	"Chrome body + edge on the popover's custom tailed path (pathOn:inset:): Theme
 	chromeBody fill, 1px chromeHighlight inner stroke, 0.5px chromeHairline outer."
@@ -1618,7 +1625,7 @@ drawOn: aCanvas
 	aCanvas strokeWidth: 1 * s color: Theme current chromeHighlight do: [self pathOn: aCanvas inset: 1 * s].
 	aCanvas strokeWidth: 0.5 * s color: Theme current chromeHairline do: [self pathOn: aCanvas inset: 0.25 * s]! !
 
-!Popover methodsFor: 'drawing' stamp: ''!
+!Popover methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 pathOn: aCanvas inset: i
 	"Body outline built in a canonical tail-DOWN frame, point-transformed to the actual side. Full
 	corner, short flat shoulder, a smooth tail bump rising to a ROUNDED nose (horizontal tangent at the
@@ -1660,7 +1667,7 @@ pathOn: aCanvas inset: i
 	aCanvas lineTo: (tx value: left @ (top + r)).
 	aCanvas closePath! !
 
-!Popover methodsFor: 'building' stamp: ''!
+!Popover methodsFor: 'building' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 text: aString
 	"Build the label and size the bubble (text-height, no growth). Reserve the tail protrusion on the
 	axis facing the tail side; the protrusion (logical px) is read through tuneAt:default: so a tuner
@@ -1693,60 +1700,60 @@ text: aString
 			ifTrue: [padX @ (tailH + padY)]
 			ifFalse: [padX @ padY]])! !
 
-!Popover methodsFor: 'accessing' stamp: ''!
+!Popover methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 defaultLayerNumber
 	"Lower number = drawn on top. Above everything dock-related and above HoverHelpMorph (10)."
 	^ 5! !
 
-!Popover methodsFor: 'accessing' stamp: ''!
+!Popover methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 tailSide
 	"Which edge the tail protrudes from: #bottom (default), #top, #left, #right."
 	^ (self valueOfProperty: #tailSide) ifNil: [#bottom]! !
 
-!Popover methodsFor: 'accessing' stamp: ''!
+!Popover methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 tailSide: aSymbol
 	"Set the tail edge before text: (it affects sizing)."
 	self setProperty: #tailSide toValue: aSymbol! !
 
-!Popover methodsFor: 'events' stamp: ''!
+!Popover methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 collapse
 	"Blueprint chrome: a popover is a transient overlay, never a dock candidate. Opts out of
 	Morph>>collapse by overriding it, the same way the dock chrome and taskbar do."! !
 
-!Popover methodsFor: 'events' stamp: ''!
+!Popover methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesMouseDown: anEvent
 	^ false! !
 
-!Popover methodsFor: 'events' stamp: ''!
+!Popover methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesMouseOver: anEvent
 	^ false! !
 
-!Popover methodsFor: 'initialization' stamp: ''!
+!Popover methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize
 	super initialize.
 	self beSticky! !
 
-!Popover methodsFor: 'testing' stamp: ''!
+!Popover methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 isIncludedInTaskbar
 	^ false! !
 
-!Popover methodsFor: 'testing' stamp: ''!
+!Popover methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 requiresVectorCanvas
 	"Vector canvas needed for the rounded path with arrow tail."
 	^ true! !
 
-!MorphHalo methodsFor: 'handles' stamp: ''!
+!MorphHalo methodsFor: 'handles' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 grips
 	"The eight resize grips: four corners and four edge midpoints."
 	^ #(#topLeft #top #topRight #right #bottomRight #bottom #bottomLeft #left)! !
 
-!MorphHalo methodsFor: 'handles' stamp: ''!
+!MorphHalo methodsFor: 'handles' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handleHitSize
 	"Side length of a grip's (invisible) hit box, in physical px. Larger than the
 	drawn square (~12px) so the grips are easy to grab."
 	^ 12 * DisplayScreen hostOSScaleFactor! !
 
-!MorphHalo methodsFor: 'handles' stamp: ''!
+!MorphHalo methodsFor: 'handles' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 layout
 	"Re-fit the halo to the target's current world bounds, reposition the grips,
 	and update the dimension / scale pills. Bounds via targetBounds so it works on
@@ -1761,17 +1768,17 @@ layout
 	self redrawNeeded
 ! !
 
-!MorphHalo methodsFor: 'drawing' stamp: ''!
+!MorphHalo methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 defaultColor
 	"Pulled up from HaloMorph."
 	^ Color r: 0.6 g: 0.8 b: 1.0! !
 
-!MorphHalo methodsFor: 'drawing' stamp: ''!
+!MorphHalo methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 defaultLayerNumber
 	"Pulled up from HaloMorph: float above everything."
 	^ 20! !
 
-!MorphHalo methodsFor: 'drawing' stamp: ''!
+!MorphHalo methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"Blueprint halo frame: a thin accent rectangle over the target. When the target is
 	rotated, the frame is a straight quad through the rotated corners so it hugs the morph;
@@ -1797,19 +1804,19 @@ drawOn: aCanvas
 				aCanvas lineTo: (bounds left + (0.5 * s)) @ (bounds bottom - (0.5 * s)).
 				aCanvas closePath]]! !
 
-!MorphHalo methodsFor: 'drawing' stamp: ''!
+!MorphHalo methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 knowsOwnLocalBounds
 	"Pulled up from HaloMorph: bounds include protruding handles, so let the framework compute them."
 	^ false! !
 
-!MorphHalo methodsFor: 'drawing' stamp: ''!
+!MorphHalo methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 requiresVectorCanvas
 	"We draw squircles and strokes (vector protocol), so we must be drawn on a
 	VectorCanvas -- unlike the classic HaloMorph, which uses BitBlt ops."
 	^ true
 ! !
 
-!MorphHalo methodsFor: 'drawing' stamp: ''!
+!MorphHalo methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 strokeFrameOn: aCanvas corners: pts
 	"Stroke a plain (square-cornered) quadrilateral through the four halo-local corner
 	points pts (TL TR BR BL) -- the rotated frame."
@@ -1821,12 +1828,12 @@ strokeFrameOn: aCanvas corners: pts
 		2 to: pts size do: [:i | aCanvas lineTo: (pts at: i)].
 		aCanvas closePath]! !
 
-!MorphHalo methodsFor: 'drawing' stamp: ''!
+!MorphHalo methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 submorphsMightProtrude
 	"Pulled up from HaloMorph: grips and pills are drawn outside our bounds."
 	^ true! !
 
-!MorphHalo methodsFor: 'resize' stamp: ''!
+!MorphHalo methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 doResize: evt with: handle
 	"Resize from the captured start geometry to the cursor. Symmetric (about the start
 	centre) while Shift is held, asymmetric otherwise. Shift is read from the move event;
@@ -1836,7 +1843,7 @@ doResize: evt with: handle
 	control points track the resizing frame."
 	self resizeTargetTo: evt eventPosition grip: (handle valueOfProperty: #grip) symmetric: evt shiftPressed! !
 
-!MorphHalo methodsFor: 'resize' stamp: ''!
+!MorphHalo methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 endResize
 	"End an active resize: clear the active flag and forget the start geometry (re-captured
 	at the next drag). Mouse focus is released for us by processMouseUp:."
@@ -1846,12 +1853,12 @@ endResize
 	self removeProperty: #resizeStartRotation.
 	self removeProperty: #resizeStartScale! !
 
-!MorphHalo methodsFor: 'resize' stamp: ''!
+!MorphHalo methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 resizeTargetTo: aWorldPoint grip: grip
 	"Asymmetric resize (the default); see the symmetric: variant."
 	^ self resizeTargetTo: aWorldPoint grip: grip symmetric: false! !
 
-!MorphHalo methodsFor: 'resize' stamp: ''!
+!MorphHalo methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 resizeTargetTo: aWorldPoint grip: grip symmetric: sym
 	"Resize from the captured start state (centre c0, extent w0@h0, rotation r, scale s).
 	Project the cursor offset onto the rotated local axes ux/uy and divide by s to get
@@ -1904,7 +1911,7 @@ resizeTargetTo: aWorldPoint grip: grip symmetric: sym
 	target positionInWorld: origin.
 	self layout! !
 
-!MorphHalo methodsFor: 'resize' stamp: ''!
+!MorphHalo methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 startResize: evt with: handle
 	"Resize start: capture the start geometry ONCE (extent, world centre, rotation, scale)
 	with a re-entry guard so a repeated mouse-down can not reset the symmetric pivot. The
@@ -1918,7 +1925,7 @@ startResize: evt with: handle
 	self setProperty: #resizeStartRotation toValue: ((target respondsTo: #rotation) ifTrue: [target rotation] ifFalse: [0]).
 	self setProperty: #resizeStartScale toValue: target location scale! !
 
-!MorphHalo methodsFor: 'labels' stamp: ''!
+!MorphHalo methodsFor: 'labels' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addLabels
 	"Add the title pill (window chrome: window-coloured squircle, perimeter stroke, controls, name,
 	above the frame -- a MorphHaloTitle) and the dimensions / scale / rotation scrubber pills
@@ -1941,7 +1948,7 @@ addLabels
 	self addMorph: rot.
 	self layoutLabels! !
 
-!MorphHalo methodsFor: 'labels' stamp: ''!
+!MorphHalo methodsFor: 'labels' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 dimensionsString
 	"Target size in logical (DPI-independent) px, W x H. Uses the target's own
 	extent (rotation-independent) when it has one, so a rotated morph still reports
@@ -1956,7 +1963,7 @@ dimensionsString
 	sep := thin , (Character value: 215) asString , thin.
 	^ (self string1Decimal: ext x / s) , sep , (self string1Decimal: ext y / s)! !
 
-!MorphHalo methodsFor: 'labels' stamp: ''!
+!MorphHalo methodsFor: 'labels' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 labelOfKind: kind
 	"Find the pill submorph carrying this #labelKind. Matched on the property, NOT the class, because
 	the metric pills are BlueprintHaloScrubbers while the name pill is a BlueprintHaloTitle (sibling
@@ -1965,7 +1972,7 @@ labelOfKind: kind
 		detect: [:m | (m valueOfProperty: #labelKind) == kind]
 		ifNone: [nil]! !
 
-!MorphHalo methodsFor: 'labels' stamp: ''!
+!MorphHalo methodsFor: 'labels' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 layoutLabels
 	"Update each label text and place it: the morph-name label centred above the top
 	grips; the dimensions / scale / rotation pills in a single centred row just under the
@@ -1991,13 +1998,13 @@ layoutLabels
 		m morphPosition: x @ topY.
 		x := x + m morphExtent x + gap]! !
 
-!MorphHalo methodsFor: 'labels' stamp: ''!
+!MorphHalo methodsFor: 'labels' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 nameString
 	"Target morph's class name and identity, e.g. 'ColoredBoxMorph (3006119)' -
 	the title shown above the frame in the design draft."
 	^ target class name asString , ' (' , target identityHash printString , ')'! !
 
-!MorphHalo methodsFor: 'labels' stamp: ''!
+!MorphHalo methodsFor: 'labels' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 rotationString
 	"Target rotation in whole degrees, signed and folded to (-180, 180] so 0 is upright and
 	the sign is the tilt direction (+ clockwise on screen, since y points down). The seam
@@ -2009,12 +2016,12 @@ rotationString
 	signed = -180 ifTrue: [signed := 180].
 	^ signed printString , (Character value: 176) asString! !
 
-!MorphHalo methodsFor: 'labels' stamp: ''!
+!MorphHalo methodsFor: 'labels' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 scaleString
 	"Target scale as a percentage."
 	^ (target scale * 100) rounded printString , '%'! !
 
-!MorphHalo methodsFor: 'labels' stamp: ''!
+!MorphHalo methodsFor: 'labels' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 string1Decimal: aNumber
 	"Format a number with exactly one decimal place (avoids ugly Float
 	printStrings from #roundTo:)."
@@ -2022,7 +2029,7 @@ string1Decimal: aNumber
 	n := (aNumber * 10) rounded.
 	^ (n // 10) printString , '.' , (n \\ 10) printString! !
 
-!MorphHalo methodsFor: 'events' stamp: ''!
+!MorphHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 endInteraction
 	"Mouse-up on a grip: end any active resize, then the (formerly inherited) cleanup -
 	if the target is still in-world, bring the halo to front and re-add the handles."
@@ -2032,7 +2039,7 @@ endInteraction
 		self comeToFront.
 		self addHandles]! !
 
-!MorphHalo methodsFor: 'events' stamp: ''!
+!MorphHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseDown: aMouseButtonEvent
 	"Handle clicks in the halo body (not on a grip): button 1 drags the target
 	(the halo follows), button 2 opens the context menu. Grips are submorphs and
@@ -2040,7 +2047,7 @@ handlesMouseDown: aMouseButtonEvent
 	^ true
 ! !
 
-!MorphHalo methodsFor: 'events' stamp: ''!
+!MorphHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 keyStroke: aKeyboardEvent
 	"Backspace or Delete, while the halo is up, deletes the target morph and
 	dismisses the halo. Other keys fall through. Honors the keyboard #wasHandled
@@ -2055,18 +2062,18 @@ keyStroke: aKeyboardEvent
 			^ self].
 	super keyStroke: aKeyboardEvent! !
 
-!MorphHalo methodsFor: 'events' stamp: ''!
+!MorphHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseButton1Down: evt localPosition: localEventPosition
 	"Begin moving the target by dragging the halo body."
 	evt hand obtainHalo: self.
 	target ifNotNil: [positionOffset := evt eventPosition - target positionInWorld]! !
 
-!MorphHalo methodsFor: 'events' stamp: ''!
+!MorphHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseButton1Up: evt localPosition: localEventPosition
 	"Finish a body drag; keep the halo up."
 	evt hand obtainHalo: self! !
 
-!MorphHalo methodsFor: 'events' stamp: ''!
+!MorphHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseButton3Down: aMouseButtonEvent localPosition: localEventPosition
 	"Pulled up from HaloMorph: right-click transfers the halo to the next likely recipient."
 	target ifNil: [ self delete. ^ self ].
@@ -2078,7 +2085,7 @@ mouseButton3Down: aMouseButtonEvent localPosition: localEventPosition
 		clkSel: #transferHalo:localPosition:
 		dblClkSel: nil! !
 
-!MorphHalo methodsFor: 'events' stamp: ''!
+!MorphHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseMove: evt localPosition: localEventPosition
 	"Drag the target with the cursor and keep the halo fitted over it."
 	target ifNil: [^ self].
@@ -2086,7 +2093,7 @@ mouseMove: evt localPosition: localEventPosition
 	target positionInWorld: evt eventPosition - positionOffset.
 	self layout! !
 
-!MorphHalo methodsFor: 'events' stamp: ''!
+!MorphHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 rejectsEvent: aMorphicEvent
 	"Accept keyboard (so Backspace/Delete reach keyStroke: while the halo holds focus) and
 	mouse-down; reject the rest so other events fall through to target/owner. Move/up during a
@@ -2095,7 +2102,7 @@ rejectsEvent: aMorphicEvent
 	(aMorphicEvent isMouse and: [aMorphicEvent isMouseDown]) ifTrue: [^ false].
 	^ true! !
 
-!MorphHalo methodsFor: 'events' stamp: ''!
+!MorphHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 staysUpWhenMouseIsDownIn: aMorph
 	"Keep the halo up when the press lands on the halo body itself (aMorph == self -
 	a body drag-to-move or a body right-click), as well as on the target or on one of
@@ -2104,13 +2111,13 @@ staysUpWhenMouseIsDownIn: aMorph
 	^ (aMorph == self) or: [(aMorph == target) or: [aMorph hasOwner: self]]
 ! !
 
-!MorphHalo methodsFor: 'events' stamp: ''!
+!MorphHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 transferHalo: event localPosition: localEventPosition
 	"Pulled up from HaloMorph."
 	target ifNil: [ self delete. ^ self ].
 	target transferHalo: event from: target! !
 
-!MorphHalo methodsFor: 'menu' stamp: ''!
+!MorphHalo methodsFor: 'menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 duplicateTarget
 	"Drop a copy of the target into its owner, offset so it is visible."
 	| dup s |
@@ -2120,7 +2127,7 @@ duplicateTarget
 	dup morphPosition: target morphPosition + ((16 * s) @ (16 * s))
 ! !
 
-!MorphHalo methodsFor: 'menu' stamp: ''!
+!MorphHalo methodsFor: 'menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 getMenu
 	"Context menu for the target morph, in logical sections: inspect/explore,
 	z-order, duplicate/collapse, then delete. Items target the morph directly with
@@ -2146,7 +2153,7 @@ getMenu
 	^ menu
 ! !
 
-!MorphHalo methodsFor: 'geometry' stamp: ''!
+!MorphHalo methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 corners
 	"The target's four corners in WORLD coordinates (topLeft, topRight,
 	bottomRight, bottomLeft), rotated if the target is. Nil if the target has no
@@ -2156,7 +2163,7 @@ corners
 	^ #(#topLeft #topRight #bottomRight #bottomLeft) collect: [:g |
 		target externalizeToWorld: (self gripLocalPoint: g)]! !
 
-!MorphHalo methodsFor: 'geometry' stamp: ''!
+!MorphHalo methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 gripLocalPoint: grip
 	"Point in the TARGET's own (un-rotated) local coordinates for a grip. Mapped
 	to world via target externalizeToWorld: (which applies the target rotation),
@@ -2173,14 +2180,14 @@ gripLocalPoint: grip
 	grip == #left ifTrue: [^ 0 @ (h / 2)].
 	^ 0 @ 0! !
 
-!MorphHalo methodsFor: 'geometry' stamp: ''!
+!MorphHalo methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 gripPoint: grip
 	"Halo-local point for a grip = its world position (rotated) minus the halo's
 	world origin (the AABB origin). At rotation 0 this is the plain corner/edge
 	point, matching the un-rotated layout."
 	^ (target externalizeToWorld: (self gripLocalPoint: grip)) - self targetBounds origin! !
 
-!MorphHalo methodsFor: 'geometry' stamp: ''!
+!MorphHalo methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 rotateHandlePoint: corner
 	"Halo-local centre for a rotate zone: the corner pushed outward from the
 	target centre by one hit-size, so it sits just beyond the corner resize grip."
@@ -2192,7 +2199,7 @@ rotateHandlePoint: corner
 	off := self handleHitSize.
 	^ len = 0 ifTrue: [cp] ifFalse: [cp + (dir * (off / len))]! !
 
-!MorphHalo methodsFor: 'geometry' stamp: ''!
+!MorphHalo methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 targetBounds
 	"World bounds for fitting the halo. For a (possibly rotated) morph with a
 	morphExtent, the axis-aligned bounding box of its rotated corners -- so the
@@ -2204,7 +2211,7 @@ targetBounds
 		ifTrue: [target displayBoundsForHalo]
 		ifFalse: [Rectangle encompassing: corners]! !
 
-!MorphHalo methodsFor: 'initialization' stamp: ''!
+!MorphHalo methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addHandles: aDisplayRectangle
 	"Blueprint halo: size to the target AABB, add rotate zones (behind) then the
 	resize grips (in front, so the corner stays resize and rotation lives just
@@ -2216,7 +2223,7 @@ addHandles: aDisplayRectangle
 	self addLabels.
 	self redrawNeeded! !
 
-!MorphHalo methodsFor: 'initialization' stamp: ''!
+!MorphHalo methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addResizeHandles
 	"Add a resize grip at each of the 8 grip points, rotated to match the frame
 	and wired to the resize handlers. Skip if the target cannot be resized."
@@ -2230,7 +2237,7 @@ addResizeHandles
 		handle mouseUpSelector: #endInteraction.
 		self placeHandle: handle at: (self gripPoint: grip)]! !
 
-!MorphHalo methodsFor: 'initialization' stamp: ''!
+!MorphHalo methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addRotateHandles
 	"Add an invisible rotate hit-zone just outside each corner, rotated to match
 	the frame and wired to the rotate handlers. Only for rotatable morphs."
@@ -2245,7 +2252,7 @@ addRotateHandles
 		handle mouseUpSelector: #endInteraction.
 		self placeHandle: handle at: (self rotateHandlePoint: corner)]! !
 
-!MorphHalo methodsFor: 'initialization' stamp: ''!
+!MorphHalo methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 placeHandle: handle at: p
 	"Place a grip / rotate zone centred at halo-local point p, rotated to match the target so the grip
 	squares align with the rotated frame. Rotation pivots about the morph origin, so offset the origin by
@@ -2258,7 +2265,7 @@ placeHandle: handle at: p
 	handle rotation: rot.
 	handle morphPosition: p - ((hx @ hx) rotatedBy: rot)! !
 
-!MorphHalo methodsFor: 'initialization' stamp: ''!
+!MorphHalo methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 repositionHandles
 	"Move + re-rotate each grip / rotate zone to its recomputed point after the
 	target was resized or rotated."
@@ -2270,20 +2277,20 @@ repositionHandles
 				ifFalse: [self gripPoint: grip].
 			self placeHandle: m at: p]]! !
 
-!MorphHalo methodsFor: 'stepping' stamp: ''!
+!MorphHalo methodsFor: 'stepping' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 step
 	"Pulled up from HaloMorph: self-dismiss when the target goes away."
 	(target isNil or: [target isInWorld not]) ifTrue: [self delete]! !
 
-!MorphHalo methodsFor: 'stepping' stamp: ''!
+!MorphHalo methodsFor: 'stepping' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 stepTime
 	^ 100! !
 
-!MorphHalo methodsFor: 'stepping' stamp: ''!
+!MorphHalo methodsFor: 'stepping' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 wantsSteps
 	^ true! !
 
-!MorphHalo methodsFor: 'rotate' stamp: ''!
+!MorphHalo methodsFor: 'rotate' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 doRotate: evt with: handle
 	"Mouse-move while dragging a rotate zone: advance the raw rotation by the incremental
 	pointer-angle change, then set the target to the raw angle -- or, while Shift is held,
@@ -2307,7 +2314,7 @@ doRotate: evt with: handle
 	self setProperty: #rotLastAngle toValue: cur.
 	self layout! !
 
-!MorphHalo methodsFor: 'rotate' stamp: ''!
+!MorphHalo methodsFor: 'rotate' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 startRotate: evt with: handle
 	"Begin a rotate drag from a corner zone. Remember the world centre we rotate about, the
 	pointer angle from it, and the starting raw (un-snapped) rotation. Rotation is applied
@@ -2321,7 +2328,7 @@ startRotate: evt with: handle
 	self setProperty: #rotLastAngle toValue: (evt eventPosition - center) theta.
 	self setProperty: #rotRaw toValue: target rotation! !
 
-!MorphHalo methodsFor: 'controls' stamp: ''!
+!MorphHalo methodsFor: 'controls' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 closeTarget
 	"Red control: close the target (windows keep their save-prompt via closeBoxHit; other
 	morphs just delete), then dismiss the halo."
@@ -2330,7 +2337,7 @@ closeTarget
 	self delete.
 	t ifNotNil: [(t respondsTo: #closeBoxHit) ifTrue: [t closeBoxHit] ifFalse: [t delete]]! !
 
-!MorphHalo methodsFor: 'controls' stamp: ''!
+!MorphHalo methodsFor: 'controls' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 collapseTarget
 	"Yellow control: minimize the target into the Dock (Morph collapse flies any dockable
 	morph into the taskbar), then dismiss the halo."
@@ -2339,7 +2346,7 @@ collapseTarget
 	self delete.
 	t ifNotNil: [t collapse]! !
 
-!MorphHalo methodsFor: 'controls' stamp: ''!
+!MorphHalo methodsFor: 'controls' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 expandTarget
 	"Green control: expand. For a window target, toggle full screen (SystemWindow>>fullScreen,
 	animated); for other morphs there is no meaningful expand, so do nothing. Dismiss the halo
@@ -2349,14 +2356,14 @@ expandTarget
 	self delete.
 	t ifNotNil: [(t respondsTo: #fullScreen) ifTrue: [t fullScreen]]! !
 
-!MorphHalo methodsFor: 'controls' stamp: ''!
+!MorphHalo methodsFor: 'controls' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 menu
 	"Blue control: pop up the target context menu (the same menu as getMenu)."
 	| menu |
 	menu := self getMenu.
 	menu ifNotNil: [menu popUpInWorld: self world]! !
 
-!MorphHalo methodsFor: 'layout' stamp: ''!
+!MorphHalo methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addHandles
 	"Pulled up from HaloMorph. Bridge from target: to our addHandles:; defers until the
 	target has drawn bounds."
@@ -2368,7 +2375,7 @@ addHandles
 				self whenUIinSafeState: [
 					target displayBoundsForHalo ifNotNil: [ :r | self addHandles: r]]]]! !
 
-!MorphHalo methodsFor: 'layout' stamp: ''!
+!MorphHalo methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesBox
 	"Padded bounds the grips occupy (local coords). Self-contained: halo padding is a
 	Blueprint logical constant (16pt) instead of the stock #haloHandleSize preference.
@@ -2382,7 +2389,7 @@ handlesBox
 	self world ifNotNil: [ :w | box := box intersect: (w viewBox insetBy: (hs@hs corner: hs@(hs*3))) ].
 	^box translatedBy: self morphPosition negated! !
 
-!MorphHalo methodsFor: 'lifecycle' stamp: ''!
+!MorphHalo methodsFor: 'lifecycle' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 delete
 	"Pulled up from HaloMorph; also restore the cursor - a grip may have set a resize/rotate
 	cursor and then been deleted before its mouseLeave: could fire."
@@ -2390,12 +2397,12 @@ delete
 	target ifNotNil: [ target redrawNeeded ].
 	Cursor currentCursor: Cursor normalCursor! !
 
-!MorphHalo methodsFor: 'lifecycle' stamp: ''!
+!MorphHalo methodsFor: 'lifecycle' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 deleteBalloon
 	"Pulled up from HaloMorph."
 	target deleteBalloon! !
 
-!MorphHalo methodsFor: 'lifecycle' stamp: ''!
+!MorphHalo methodsFor: 'lifecycle' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 popUpFor: aMorph handPosition: handPosition hand: hand
 	"Pulled up from HaloMorph (hierarchy collapse). Wire into hand + world, set target
 	(triggers addHandles), record the grab offset."
@@ -2404,36 +2411,36 @@ popUpFor: aMorph handPosition: handPosition hand: hand
 	self target: aMorph.
 	positionOffset := handPosition - aMorph positionInWorld! !
 
-!MorphHalo methodsFor: 'accessing' stamp: ''!
+!MorphHalo methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 target
 	^ target! !
 
-!MorphHalo methodsFor: 'accessing' stamp: ''!
+!MorphHalo methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 target: aMorph
 	"Pulled up from HaloMorph."
 	target := aMorph.
 	target ifNotNil: [self addHandles]! !
 
-!MorphHalo methodsFor: 'actions' stamp: ''!
+!MorphHalo methodsFor: 'actions' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 collapse
 	"A halo is a transient overlay on another morph, never a dock candidate; collapse is a no-op."! !
 
-!MorphHalo methodsFor: 'testing' stamp: ''!
+!MorphHalo methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 is: aSymbol
 	"Behavioral tag so event dispatch recognizes a halo."
 	^ aSymbol == #MorphHalo or: [super is: aSymbol]! !
 
-!MorphHalo methodsFor: 'testing' stamp: ''!
+!MorphHalo methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isIncludedInTaskbar
 	"Pulled up from HaloMorph: a halo is never a taskbar entry."
 	^ false! !
 
-!MorphHalo methodsFor: 'testing' stamp: ''!
+!MorphHalo methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 wantsHalo
 	"A halo never gets its own halo."
 	^ false! !
 
-!MorphHalo class methodsFor: 'cursors' stamp: ''!
+!MorphHalo class methodsFor: 'cursors' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 rotateCursor
 	"A 16x16 clockwise circular-arrow hardware cursor for the rotate zones,
 	hotspot at the centre."
@@ -2458,7 +2465,7 @@ rotateCursor
 			2r0000000000000000)
 		offset: -8 @ -8) withMask! !
 
-!MorphHaloScrubber methodsFor: 'drawing' stamp: ''!
+!MorphHaloScrubber methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"Cap-centred text on a filled squircle capsule. Fill (#fill, default accent) and
 	text colour (#ink, default white) are per-label: the dimensions / scale pills are
@@ -2479,24 +2486,24 @@ drawOn: aCanvas
 	ty := bounds top + ((bounds height + capH) / 2) - f ascent.
 	aCanvas drawString: txt at: tx @ ty font: f color: ink! !
 
-!MorphHaloScrubber methodsFor: 'drawing' stamp: ''!
+!MorphHaloScrubber methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 font
 	"Pill text: two steps below body on the type scale -- small, since scrubbers are
 	dense meta-chrome, not content. Follows the zoom knob and family choice."
 	^ Theme current fontAt: -2! !
 
-!MorphHaloScrubber methodsFor: 'drawing' stamp: ''!
+!MorphHaloScrubber methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!MorphHaloScrubber methodsFor: 'accessing' stamp: ''!
+!MorphHaloScrubber methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 text: aString
 	"Set the displayed string and resize to fit it (text + padding)."
 	self setProperty: #txt toValue: aString.
 	self fitText.
 	self redrawNeeded! !
 
-!MorphHaloScrubber methodsFor: 'geometry' stamp: ''!
+!MorphHaloScrubber methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 fitText
 	"Size the pill to its text plus padding (padH 6 / padV 4 logical px)."
 	| f txt s padH padV |
@@ -2507,7 +2514,7 @@ fitText
 	padV := 4 * s.
 	self morphExtent: ((f widthOfString: txt) + (2 * padH)) @ (f lineSpacing + (2 * padV))! !
 
-!MorphHaloScrubber methodsFor: 'scrub' stamp: ''!
+!MorphHaloScrubber methodsFor: 'scrub' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 kindIsInteractive
 	"Whether this pill's scrub is allowed for the current target: dims needs okayToResizeEasily, scale
 	needs okayToScaleEasily, rotation needs okayToRotateEasily. When false the pill stays VISIBLE but goes inert."
@@ -2521,18 +2528,18 @@ kindIsInteractive
 	(self valueOfProperty: #labelKind) == #rotation ifTrue: [^ t okayToRotateEasily].
 	^ false! !
 
-!MorphHaloScrubber methodsFor: 'scrub' stamp: ''!
+!MorphHaloScrubber methodsFor: 'scrub' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseButton1Up: evt localPosition: localPos
 	"End the scrub and do a final clean re-fit."
 	self setProperty: #scrubbing toValue: false.
 	self owner ifNotNil: [:h | (h respondsTo: #layout) ifTrue: [h layout]]! !
 
-!MorphHaloScrubber methodsFor: 'scrub' stamp: ''!
+!MorphHaloScrubber methodsFor: 'scrub' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseLeave: evt
 	"Restore the normal cursor when the pointer leaves a scrubbable pill."
 	Cursor currentCursor: Cursor normalCursor! !
 
-!MorphHaloScrubber methodsFor: 'scrub' stamp: ''!
+!MorphHaloScrubber methodsFor: 'scrub' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseMove: evt localPosition: localPos
 	"Drive the scrub by the pointer world-x delta; Shift snaps to nice values. Then re-fit."
 	| halo t dx kind snap |
@@ -2547,7 +2554,7 @@ mouseMove: evt localPosition: localPos
 	kind == #dims ifTrue: [self scrubDims: t by: dx snap: snap].
 	halo layout! !
 
-!MorphHaloScrubber methodsFor: 'scrub' stamp: ''!
+!MorphHaloScrubber methodsFor: 'scrub' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 scrubDims: t by: dx snap: snap
 	"Exponential aspect-locked resize (300 px doubles), about the centre; short side floored at 8 px."
 	| ext w0 h0 factor newW newH s c0 c1 |
@@ -2569,7 +2576,7 @@ scrubDims: t by: dx snap: snap
 	c1 := t externalizeToWorld: (t morphExtent / 2).
 	t morphPosition: t morphPosition + (c0 - c1)! !
 
-!MorphHaloScrubber methodsFor: 'scrub' stamp: ''!
+!MorphHaloScrubber methodsFor: 'scrub' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 scrubRotation: t by: dx snap: snap
 	"Linear rotation scrub (0.5 deg per px), about the centre. Shift snaps to 15 deg steps."
 	| startRot newRot c0 c1 lc |
@@ -2583,7 +2590,7 @@ scrubRotation: t by: dx snap: snap
 	c1 := t externalizeToWorld: lc.
 	t morphPosition: t morphPosition + (c0 - c1)! !
 
-!MorphHaloScrubber methodsFor: 'scrub' stamp: ''!
+!MorphHaloScrubber methodsFor: 'scrub' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 scrubScale: t by: dx snap: snap
 	"Exponential scale scrub (300 px doubles), about the centre. Shift snaps to 25% steps."
 	| startScale newScale c0 c1 lc |
@@ -2597,19 +2604,19 @@ scrubScale: t by: dx snap: snap
 	c1 := t externalizeToWorld: lc.
 	t morphPosition: t morphPosition + (c0 - c1)! !
 
-!MorphHaloScrubber methodsFor: 'events' stamp: ''!
+!MorphHaloScrubber methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseDown: anEvent
 	"The scale/rotation/dims pills are live scrubbers -- but only while the target actually supports that
 	operation (see kindIsInteractive); otherwise the pill stays visible to read the value but is inert.
 	The name pill is passive (it is a BlueprintHaloTitle, not a BlueprintHaloLabel)."
 	^ self kindIsInteractive! !
 
-!MorphHaloScrubber methodsFor: 'events' stamp: ''!
+!MorphHaloScrubber methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseOver: anEvent
 	"Only an interactive pill receives mouseEnter:/mouseLeave: for the scrub cursor."
 	^ self kindIsInteractive! !
 
-!MorphHaloScrubber methodsFor: 'events' stamp: ''!
+!MorphHaloScrubber methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseButton1Down: evt localPosition: localPos
 	"Begin a scrub: remember the pointer world-x, the relevant start value (scale, rotation, or extent),
 	and a robust LOCAL centre for the about-centre compensation -- morphExtent/2 when the morph has an
@@ -2629,39 +2636,39 @@ mouseButton1Down: evt localPosition: localPos
 		ifNil: [t location inverseTransform: (t findFullBoundsInOwner center)]).
 	self setProperty: #scrubbing toValue: true! !
 
-!MorphHaloScrubber methodsFor: 'events' stamp: ''!
+!MorphHaloScrubber methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseEnter: evt
 	"Interactive pills are horizontal-drag scrubs, so show the horizontal resize cursor. An inert pill
 	(e.g. dims on a non-resizable morph) keeps the normal cursor."
 	self kindIsInteractive
 		ifTrue: [Cursor currentCursor: (Cursor resizeForEdge: #left)]! !
 
-!MorphHaloTitle methodsFor: 'metrics' stamp: ''!
+!MorphHaloTitle methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 buttonGap
 	"Gap between adjacent control buttons."
 	^ self buttonSize * 0.45! !
 
-!MorphHaloTitle methodsFor: 'metrics' stamp: ''!
+!MorphHaloTitle methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 buttonHPad
 	"Extra horizontal inset for the button row beyond the vertical inset, so the first button
 	looks concentric with the squircle left cap. Logical px (tuned by eye)."
 	^ 2 * DisplayScreen hostOSScaleFactor! !
 
-!MorphHaloTitle methodsFor: 'metrics' stamp: ''!
+!MorphHaloTitle methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 buttonInset
 	"Inset of the button row from the pill edge. Equal to the vertical inset, so the first
 	button is concentric with the pill rounded left cap (a capsule of radius height/2): its
 	centre lands at (height/2, height/2), the cap centre."
 	^ (self pillHeight - self buttonSize) / 2! !
 
-!MorphHaloTitle methodsFor: 'metrics' stamp: ''!
+!MorphHaloTitle methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 buttonSize
 	"Side of a control button: 12 logical px, fixed (not tied to the title font) so
 	bumping the font does not balloon the buttons; slightly smaller than a window
 	title-bar button (titleBarButtonsExtent, 16 logical)."
 	^ 12 * DisplayScreen hostOSScaleFactor! !
 
-!MorphHaloTitle methodsFor: 'metrics' stamp: ''!
+!MorphHaloTitle methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 buttonsWidth
 	"Total width of the control-button row (n buttons + gaps), 0 if none."
 	| n |
@@ -2669,29 +2676,29 @@ buttonsWidth
 	n = 0 ifTrue: [^ 0].
 	^ (n * self buttonSize) + ((n - 1) * self buttonGap)! !
 
-!MorphHaloTitle methodsFor: 'metrics' stamp: ''!
+!MorphHaloTitle methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 edgeInset
 	"Horizontal inset from the pill edge to the first button / from the text to the right edge:
 	the vertical inset plus the squircle nudge."
 	^ self buttonInset + self buttonHPad! !
 
-!MorphHaloTitle methodsFor: 'metrics' stamp: ''!
+!MorphHaloTitle methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 font
 	"Pill title text: one step below body -- prominent but subordinate to window titles
 	(step 1). Follows the zoom knob and family choice."
 	^ Theme current fontAt: -1! !
 
-!MorphHaloTitle methodsFor: 'metrics' stamp: ''!
+!MorphHaloTitle methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 pillHeight
 	"Pill height: the taller of the title line and a button, plus vertical padding."
 	^ (self font lineSpacing max: self buttonSize) + (2 * 4 * DisplayScreen hostOSScaleFactor)! !
 
-!MorphHaloTitle methodsFor: 'metrics' stamp: ''!
+!MorphHaloTitle methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 textLeft
 	"Local x where the name text starts: horizontal edge inset + the button row + a gap."
 	^ self edgeInset + self buttonsWidth + (6 * DisplayScreen hostOSScaleFactor)! !
 
-!MorphHaloTitle methodsFor: 'building' stamp: ''!
+!MorphHaloTitle methodsFor: 'building' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 button: iconSel action: actSel balloon: aString model: aHalo
 	"Build one window-control button: a noButtonShape PluggableButtonMorph whose vector icon
 	(drawCloseIcon, etc.) draws the colored circle + glyph, wired to send actSel to the halo."
@@ -2701,7 +2708,7 @@ button: iconSel action: actSel balloon: aString model: aHalo
 	self addMorph: b.
 	^ b! !
 
-!MorphHaloTitle methodsFor: 'building' stamp: ''!
+!MorphHaloTitle methodsFor: 'building' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 halo: aHalo
 	"Build the four window-control buttons (close, collapse, expand, menu) wired to the halo,
 	reusing the system title-bar PluggableButtonMorph + vector-icon recipe at a smaller size.
@@ -2715,7 +2722,7 @@ halo: aHalo
 	btns add: (self button: #drawMenuIcon action: #menu balloon: 'window menu' model: aHalo).
 	self setProperty: #buttons toValue: btns! !
 
-!MorphHaloTitle methodsFor: 'drawing' stamp: ''!
+!MorphHaloTitle methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"Title pill recreating the window chrome: a squircle body fill (full-round: radius =
 	half the height), then the same windowHighlight + windowHairline edge a window draws
@@ -2736,7 +2743,7 @@ drawOn: aCanvas
 	ty := bounds top + ((bounds height + capH) / 2) - f ascent.
 	aCanvas drawString: txt at: tx @ ty font: f color: ink! !
 
-!MorphHaloTitle methodsFor: 'drawing' stamp: ''!
+!MorphHaloTitle methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 fitText
 	"Size the title pill to [buttons][gap][name text] plus the horizontal edge insets, and lay
 	the buttons out left-packed. Buttons are vertically centred (buttonInset) and the row
@@ -2753,33 +2760,33 @@ fitText
 		b morphPosition: x @ self buttonInset.
 		x := x + btn + self buttonGap]! !
 
-!MorphHaloTitle methodsFor: 'drawing' stamp: ''!
+!MorphHaloTitle methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!MorphHaloTitle methodsFor: 'accessing' stamp: ''!
+!MorphHaloTitle methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 text: aString
 	"Set the displayed name string and resize the pill to fit it (text + padding)."
 	self setProperty: #txt toValue: aString.
 	self fitText.
 	self redrawNeeded! !
 
-!SystemWindowResizeHalo methodsFor: 'config' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'config' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 cornerRadiusLogical
 	"Outer corner radius in logical pixels; matches SystemWindow chrome."
 	^ Theme current roundedWindowRadius! !
 
-!SystemWindowResizeHalo methodsFor: 'config' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'config' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 cornerZoneLogical
 	"Side-length of each corner-sector square (in logical px)."
 	^ self cornerRadiusLogical! !
 
-!SystemWindowResizeHalo methodsFor: 'config' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'config' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 ringThicknessLogical
 	"Logical-pixel thickness of the hit-test ring."
 	^ 6! !
 
-!SystemWindowResizeHalo methodsFor: 'shape' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'shape' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 inRoundedRect: p bounds: rect radius: r
 	"Standard rounded-rect inside test. Approximates the squircle adequately for hit-testing."
 	| x y cx cy |
@@ -2792,7 +2799,7 @@ inRoundedRect: p bounds: rect radius: r
 	cy := (y - rect top < r) ifTrue: [rect top + r] ifFalse: [rect bottom - r].
 	^ ((cx @ cy) dist: p) <= r! !
 
-!SystemWindowResizeHalo methodsFor: 'hit-test' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'hit-test' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 coversLocalPoint: aLocalPoint
 	"Hollow-squircle hit-test: inside outer, outside inner."
 	| s outer inner outerR innerR ring |
@@ -2806,7 +2813,7 @@ coversLocalPoint: aLocalPoint
 	^ (self inRoundedRect: aLocalPoint bounds: outer radius: outerR)
 		and: [(self inRoundedRect: aLocalPoint bounds: inner radius: innerR) not]! !
 
-!SystemWindowResizeHalo methodsFor: 'hit-test' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'hit-test' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 sectorAt: aLocalPoint
 	"Return one of #(top bottom left right topLeft topRight bottomLeft bottomRight)."
 	| s x y w h zone dT dB dL dR minD |
@@ -2827,12 +2834,12 @@ sectorAt: aLocalPoint
 	minD = dL ifTrue: [^ #left].
 	^ #right! !
 
-!SystemWindowResizeHalo methodsFor: 'drawing' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"Invisible: hit area is in coversLocalPoint:, not drawn."
 	"(Tip: re-instate a translucent stroke here while debugging.)"! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 cursorForDragSelector
 	"Map the drag's window-resize selector back to the right cursor."
 	dragSelector ifNil: [^ Cursor defaultCursor].
@@ -2848,12 +2855,12 @@ cursorForDragSelector
 	}
 	otherwise: [Cursor defaultCursor]! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 cursorForLocalPoint: aLocalPoint
 	"Return the resize cursor matching the sector under the cursor."
 	^ Cursor resizeForEdge: (self sectorAt: aLocalPoint)! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 edgePointInWorldFor: aSector
 	"Return the owner window's relevant edge/corner point in world coords for the sector.
 	For edge sectors only the relevant axis is used by the SystemWindow resize selector;
@@ -2879,7 +2886,7 @@ edgePointInWorldFor: aSector
 		[#bottomRight]  -> [right @ bottom].
 	}! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 endDrag
 	"Release drag state and stop the per-frame poll."
 	dragHand := nil.
@@ -2887,17 +2894,17 @@ endDrag
 	dragOffset := nil.
 	self stopStepping! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseDown: anEvent
 	^ true! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseOver: anEvent
 	"We want mouseEnter / mouseLeave / mouseMove to fire so we can dispatch the
 	right resize cursor by sector under the cursor."
 	^ true! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseButton1Down: anEvent localPosition: localPoint
 	"Begin a drag-resize. Capture: hand, resize selector, AND the cursor-to-corner
 	offset so the corner stays at the same relative position to the cursor during drag
@@ -2913,7 +2920,7 @@ mouseButton1Down: anEvent localPosition: localPoint
 	self startStepping.
 	anEvent wasHandled: true! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseEnter: anEvent
 	"Set the initial cursor based on the position the mouse entered at."
 	super mouseEnter: anEvent.
@@ -2921,7 +2928,7 @@ mouseEnter: anEvent
 		(self cursorForLocalPoint: (self internalizeFromWorld: anEvent eventPosition))
 			activateCursor]! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseLeave: anEvent
 	"Restore default cursor when leaving the halo -- UNLESS we're in a drag,
 	in which case the drag's resize cursor should stick."
@@ -2929,13 +2936,13 @@ mouseLeave: anEvent
 	dragHand ifNil: [
 		Cursor defaultCursor activateCursor]! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseMove: anEvent localPosition: localPoint
 	"Update the cursor as the mouse moves within the halo (each sector has its own resize cursor)."
 	anEvent mouseButton1Pressed ifFalse: [
 		(self cursorForLocalPoint: localPoint) activateCursor]! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 resizeSelectorFor: aSector
 	"Map an 8-sector hit to the SystemWindow window<Edge>: selector that does the resize."
 	^ aSector caseOf: {
@@ -2949,7 +2956,7 @@ resizeSelectorFor: aSector
 		[#bottomRight]    -> [#windowBottomRight:].
 	}! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 step
 	"Drag-resize tick: while button-1 is held, send the resize selector with
 	(cursor + dragOffset) so the corner tracks the cursor without snapping.
@@ -2968,12 +2975,12 @@ step
 		ifNil: [targetGlobal].
 	owner perform: dragSelector with: pointInParent! !
 
-!SystemWindowResizeHalo methodsFor: 'events' stamp: ''!
+!SystemWindowResizeHalo methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 stepTime
 	"Poll cadence during a drag-resize (ms)."
 	^ 16! !
 
-!AnalogClock methodsFor: 'initialization' stamp: ''!
+!AnalogClock methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize
 	| s |
 	super initialize.
@@ -2982,20 +2989,20 @@ initialize
 	self morphExtent: (100 * s) @ (100 * s).
 	self addMorph: (ClockHands new morphExtent: self morphExtent; yourself)! !
 
-!AnalogClock methodsFor: 'testing' stamp: ''!
+!AnalogClock methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 requiresVectorCanvas ^ true! !
 
-!AnalogClock methodsFor: 'stepping' stamp: ''!
+!AnalogClock methodsFor: 'stepping' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 wantsSteps "the face is static -- only the hands submorph animates" ^ false! !
 
-!AnalogClock methodsFor: 'drawing' stamp: ''!
+!AnalogClock methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 centerString: str at: pt font: f color: c on: aCanvas
 	"Draw str centred (both axes) at pt. at: is the text top-left; ascent*0.65 vertically centres digits."
 	| w |
 	w := f widthOfString: str.
 	aCanvas drawString: str at: (pt x - (w / 2.0)) @ (pt y - (f ascent * 0.65)) font: f color: c! !
 
-!AnalogClock methodsFor: 'drawing' stamp: 'ML 3/Jul/2026 15:40:04'!
+!AnalogClock methodsFor: 'drawing' stamp: 'ML 3/Jul/2026, 1:40:04 pm (UTC)'!
 drawOn: aCanvas
 	"Apple-style clock FACE: squircle body, minute/hour ticks, and the twelve numerals.
 	The moving hands live in the ClockHands submorph."
@@ -3045,7 +3052,7 @@ drawOn: aCanvas
 	
 	! !
 
-!AnalogClock methodsFor: 'drawing' stamp: ''!
+!AnalogClock methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 edgeDistanceDx: dx dy: dy hw: hw hh: hh cr: cr
 	"Distance from centre to the rounded-rect outline (half-extents hw,hh, corner radius cr) along the
 	UNIT direction (dx,dy). A flat-edge hit if it lands on the straight part, otherwise the corner arc."
@@ -3063,14 +3070,14 @@ edgeDistanceDx: dx dy: dy hw: hw hh: hh cr: cr
 	disc < 0 ifTrue: [^ tx min: ty].
 	^ bdot + disc sqrt! !
 
-!AnalogClock methodsFor: 'geometry' stamp: ''!
+!AnalogClock methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 morphExtent: anExtent
 	"Locked square -- a clock is a circular face in a squircle; force both axes equal (larger drag wins)."
 	| side |
 	side := anExtent x max: anExtent y.
 	super morphExtent: side @ side! !
 
-!AnalogClock methodsFor: 'halo' stamp: ''!
+!AnalogClock methodsFor: 'halo' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 okayToResizeEasily
 	"Disable halo resize. The clock is drawn at one fixed base size; visual size comes from SCALING only.
 	Because okayToScaleEasily is true for a vector morph, the halo's resize handle (HaloMorph>>
@@ -3078,7 +3085,7 @@ okayToResizeEasily
 	rendering pixel-identical at any size, which a per-size resize could not."
 	^ false! !
 
-!CellPreview methodsFor: 'initialization' stamp: ''!
+!CellPreview methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize
 	"No size yet; consumer calls previewSize: to make this visible. No click
 	action by default. Transparent color so the squircle stroke is the only mark."
@@ -3088,13 +3095,13 @@ initialize
 	clickAction := nil.
 	self morphExtent: (16 @ 16) * self hostScale! !
 
-!CellPreview methodsFor: 'accessing' stamp: ''!
+!CellPreview methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 clickAction: aBlock
 	"Zero-arg block fired when the preview is clicked (e.g. animate the slider
 	to this preview's represented size)."
 	clickAction := aBlock! !
 
-!CellPreview methodsFor: 'accessing' stamp: ''!
+!CellPreview methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 previewSize: aLogicalPx
 	"Side length in logical px. Morph extent is set to the same value
 	(physical px = logical * hostOSScaleFactor, applied in drawOn:)."
@@ -3105,7 +3112,7 @@ previewSize: aLogicalPx
 	self morphExtent: physical @ physical.
 	self redrawNeeded! !
 
-!CellPreview methodsFor: 'drawing' stamp: ''!
+!CellPreview methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawOn: aCanvas
 	"Stroke-only squircle filling the morph's bounds. Stroke color and corner
 	radius match the catalog cell (Theme text alpha 0.25, 5/16 of side)."
@@ -3123,19 +3130,19 @@ drawOn: aCanvas
 			maxY: bounds bottom
 			radius: cornerR]! !
 
-!CellPreview methodsFor: 'drawing' stamp: ''!
+!CellPreview methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!CellPreview methodsFor: 'events' stamp: ''!
+!CellPreview methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesMouseDown: anEvent
 	^ clickAction notNil! !
 
-!CellPreview methodsFor: 'events' stamp: ''!
+!CellPreview methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseButton1Down: anEvent localPosition: localPos
 	clickAction ifNotNil: [clickAction value]! !
 
-!ClockHands methodsFor: 'drawing' stamp: ''!
+!ClockHands methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawHandOn: aCanvas angle: degClockwise length: len tail: tailLen width: w color: c center: ctr
 	"A clock hand: thin black outline UNDER a coloured capsule so overlapping hands stay discernible.
 	Each shape (line + the two rounded-cap circles) is its own path so they never merge. Every size is a
@@ -3157,7 +3164,7 @@ drawHandOn: aCanvas angle: degClockwise length: len tail: tailLen width: w color
 	aCanvas fillColor: c do: [aCanvas circleCenter: tip radius: rad].
 	aCanvas fillColor: c do: [aCanvas circleCenter: tl radius: rad]! !
 
-!ClockHands methodsFor: 'drawing' stamp: 'ML 3/Jul/2026 15:40:04'!
+!ClockHands methodsFor: 'drawing' stamp: 'ML 3/Jul/2026, 1:40:04 pm (UTC)'!
 drawOn: aCanvas
 	"The moving clock hands + centre cap (reads the live time). A submorph of AnalogClock (the static face);
 	 a separate morph so the unchanging face and the moving hands are a clean, independent composition."
@@ -3174,22 +3181,22 @@ drawOn: aCanvas
 	aCanvas fillColor: white do: [aCanvas circleCenter: cx@cy radius: capR].
 	aCanvas fillColor: orange do: [aCanvas circleCenter: cx@cy radius: capR * 0.5]! !
 
-!ClockHands methodsFor: 'stepping' stamp: ''!
+!ClockHands methodsFor: 'stepping' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 step "redraw each frame; reads the live time" self redrawNeeded! !
 
-!ClockHands methodsFor: 'stepping' stamp: ''!
+!ClockHands methodsFor: 'stepping' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 stepTime ^ 33! !
 
-!ClockHands methodsFor: 'stepping' stamp: ''!
+!ClockHands methodsFor: 'stepping' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 wantsSteps ^ true! !
 
-!ClockHands methodsFor: 'testing' stamp: ''!
+!ClockHands methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 requiresVectorCanvas ^ true! !
 
-!ClockHands methodsFor: 'initialization' stamp: ''!
+!ClockHands methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize super initialize. self color: Color transparent! !
 
-!MenuSearchMorph methodsFor: 'initialization' stamp: 'ML 5/Jul/2026 11:32:36'!
+!MenuSearchMorph methodsFor: 'initialization' stamp: 'ML 5/Jul/2026, 9:32:36 am (UTC)'!
 initialize
 	"A display-only search row for the command palette: a search glyph plus the mirrored query
 	text drawn on the menu's dark chrome. It never takes keyboard focus -- the menu keeps focus
@@ -3207,13 +3214,13 @@ initialize
 	self addMorph: searchIcon.
 	self morphExtent: (240 * s) @ (34 * s)! !
 
-!MenuSearchMorph methodsFor: 'accessing' stamp: 'ML 5/Jul/2026 11:32:36'!
+!MenuSearchMorph methodsFor: 'accessing' stamp: 'ML 5/Jul/2026, 9:32:36 am (UTC)'!
 matchString: aString
 	"Mirror the menu's current query into the field."
 	query := aString ifNil: [String new].
 	self redrawNeeded! !
 
-!MenuSearchMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 12:08:14'!
+!MenuSearchMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026, 10:08:14 am (UTC)'!
 drawOn: aCanvas
 	"Subtle recessed field on the dark chrome: translucent-white fill + hairline stroke, the
 	search glyph (a submorph) and the mirrored query text. Shows a dim placeholder when empty
@@ -3233,50 +3240,50 @@ drawOn: aCanvas
 		ifTrue: [aCanvas drawString: 'Type to filter' at: textX @ textY font: f color: (Color white alpha: 0.35)]
 		ifFalse: [aCanvas drawString: query at: textX @ textY font: f color: (Color white alpha: 0.95)]! !
 
-!MenuSearchMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 11:32:36'!
+!MenuSearchMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026, 9:32:36 am (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!MenuSearchMorph methodsFor: 'geometry' stamp: 'ML 5/Jul/2026 11:32:36'!
+!MenuSearchMorph methodsFor: 'geometry' stamp: 'ML 5/Jul/2026, 9:32:36 am (UTC)'!
 minItemWidth
 	"A stable preferred width so the palette never collapses narrower than a usable field;
 	the menu layout stretches us to the real column width."
 	^ 240 * DisplayScreen hostOSScaleFactor! !
 
-!MenuSearchMorph methodsFor: 'geometry' stamp: 'ML 5/Jul/2026 11:32:36'!
+!MenuSearchMorph methodsFor: 'geometry' stamp: 'ML 5/Jul/2026, 9:32:36 am (UTC)'!
 minimumExtent
 	"Only the height matters to the menu layout (it stretches width to the column)."
 	| s |
 	s := DisplayScreen hostOSScaleFactor.
 	^ (240 * s) @ (34 * s)! !
 
-!MenuSearchMorph methodsFor: 'layout' stamp: 'ML 5/Jul/2026 11:32:36'!
+!MenuSearchMorph methodsFor: 'layout' stamp: 'ML 5/Jul/2026, 9:32:36 am (UTC)'!
 extentChanged: oldExtent
 	super extentChanged: oldExtent.
 	self layoutSubmorphs! !
 
-!MenuSearchMorph methodsFor: 'layout' stamp: 'ML 5/Jul/2026 11:32:36'!
+!MenuSearchMorph methodsFor: 'layout' stamp: 'ML 5/Jul/2026, 9:32:36 am (UTC)'!
 layoutSubmorphs
 	| s |
 	s := DisplayScreen hostOSScaleFactor.
 	searchIcon morphPosition: (12 * s) @ ((self morphExtent y - searchIcon morphExtent y) / 2)! !
 
-!MenuTitleMorph methodsFor: 'geometry' stamp: ''!
+!MenuTitleMorph methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 minItemWidth
 	^ self morphWidth! !
 
-!MenuTitleMorph methodsFor: 'geometry' stamp: ''!
+!MenuTitleMorph methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 minimumExtent
 	"The extent addTitle: computed from the label lines -- the menu layout must
 	reserve all of it."
 	^ self morphExtent! !
 
-!MenuTitleMorph methodsFor: 'layout' stamp: ''!
+!MenuTitleMorph methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 extentChanged: oldExtent
 	super extentChanged: oldExtent.
 	self rightAlignButtons! !
 
-!MenuTitleMorph methodsFor: 'layout' stamp: ''!
+!MenuTitleMorph methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 rightAlignButtons
 	"Tuck any #rightAligned submorphs (the pin / close glyphs) against my right edge,
 	rightmost first, vertically centered. Re-run whenever my extent changes -- the menu
@@ -3289,7 +3296,7 @@ rightAlignButtons
 		b morphPosition: x @ ((self morphHeight - b morphHeight) / 2).
 		x := x - (6 * s)]! !
 
-!SearchBar methodsFor: 'initialization' stamp: ''!
+!SearchBar methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize
 	"Translucent-white body so the bar reads as a subtle recessed field rather
 	than a solid card; bevel chrome (perimeter stroke + focus accent) is drawn
@@ -3335,13 +3342,13 @@ initialize
 		clearButton redrawNeeded].
 	self morphExtent: (300 @ 32) * s! !
 
-!SearchBar methodsFor: 'geometry' stamp: ''!
+!SearchBar methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 extentChanged: oldExtent
 	super extentChanged: oldExtent.
 	self layoutSubmorphs
 ! !
 
-!SearchBar methodsFor: 'drawing' stamp: ''!
+!SearchBar methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawOn: aCanvas
 	"Subtle translucent-white body + perimeter stroke. Stroke flips to theme
 	accent and thickens when the search field has keyboard focus. The stroke is
@@ -3360,12 +3367,12 @@ drawOn: aCanvas
 	aCanvas strokeWidth: strokeW color: strokeC do: [
 		aCanvas squircle: bounds radius: cornerRadius inset: strokeW / 2]! !
 
-!SearchBar methodsFor: 'drawing' stamp: ''!
+!SearchBar methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 requiresVectorCanvas
 	^ true
 ! !
 
-!SearchBar methodsFor: 'events' stamp: ''!
+!SearchBar methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 changedAction: aBlock
 	"Forward external change-callback wiring to the inner SearchField, while
 	preserving our own internal handler that toggles the clear button."
@@ -3376,21 +3383,21 @@ changedAction: aBlock
 		aBlock ifNotNil: [aBlock valueWithPossibleArgument: s]]
 ! !
 
-!SearchBar methodsFor: 'events' stamp: ''!
+!SearchBar methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesMouseDown: anEvent
 	"Any click inside the bar's bounds focuses the search field — clicks
 	on the searchField/clearButton are dispatched to them first; this only
 	fires for clicks in the padding or on the (non-interactive) searchIcon."
 	^ true! !
 
-!SearchBar methodsFor: 'events' stamp: ''!
+!SearchBar methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseButton1Down: anEvent localPosition: localPos
 	"Forward focus to the search field so clicks on the bar chrome (padding,
 	search icon) feel as if the user clicked the input directly."
 	searchField ifNotNil: [
 		self world activeHand newKeyboardFocus: searchField]! !
 
-!SearchBar methodsFor: 'accessing' stamp: ''!
+!SearchBar methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 clear
 	"Empty the field, hide the clear button, fire the change action."
 	| action |
@@ -3402,12 +3409,12 @@ clear
 	action ifNotNil: [action valueWithPossibleArgument: '']
 ! !
 
-!SearchBar methodsFor: 'accessing' stamp: ''!
+!SearchBar methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 placeholder: aString
 	searchField placeholder: aString
 ! !
 
-!SearchBar methodsFor: 'layout' stamp: ''!
+!SearchBar methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 iconCenteredYFor: aHeight
 	"Bounding-box centring: the y at which a morph of height aHeight sits
 	vertically centred in self. Used for both icons (their glyph ink is
@@ -3415,7 +3422,7 @@ iconCenteredYFor: aHeight
 	Rounded (not truncated) so the box centre lands on the frame centre."
 	^ ((self morphExtent y - aHeight) / 2) rounded! !
 
-!SearchBar methodsFor: 'layout' stamp: ''!
+!SearchBar methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 layoutSubmorphs
 	"Vertically centre all three elements in the frame. The icons are centred by
 	their box (their glyph ink is box-centred), and the field text by its
@@ -3435,7 +3442,7 @@ layoutSubmorphs
 	searchField morphExtent: (fieldRight - fieldLeft) @ (f lineSpacing ceiling).
 	searchField morphPosition: fieldLeft @ (frameCenterY - capCenterY)! !
 
-!Slider methodsFor: 'initialization' stamp: ''!
+!Slider methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize
 	"Defaults: 0..1 range, midpoint, idle, no running animation. Default extent
 	is 160@40 logical, scaled to the display."
@@ -3448,13 +3455,13 @@ initialize
 	animating := false.
 	self morphExtent: (160 @ 40) * self hostScale! !
 
-!Slider methodsFor: 'accessing' stamp: ''!
+!Slider methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 changedAction: aBlock
 	"Block fired whenever value: produces a change. Receives self (the slider)
 	as the argument when it is a one-arg block; zero-arg blocks also work."
 	changedAction := aBlock! !
 
-!Slider methodsFor: 'accessing' stamp: ''!
+!Slider methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 committedAction: aBlock
 	"Block fired ONCE on mouseUp at the end of a drag. Complements
 	changedAction (fires on every value change). Pattern: cheap visual
@@ -3462,7 +3469,7 @@ committedAction: aBlock
 	keeps the drag responsive without stalling the UI."
 	committedAction := aBlock! !
 
-!Slider methodsFor: 'accessing' stamp: ''!
+!Slider methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 min: aMin max: aMax
 	"Set the slider's user-facing range. Reclamps the current value to fit."
 	minVal := aMin asFloat.
@@ -3470,11 +3477,11 @@ min: aMin max: aMax
 	value := (value max: minVal) min: maxVal.
 	self redrawNeeded! !
 
-!Slider methodsFor: 'accessing' stamp: ''!
+!Slider methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 value
 	^ value! !
 
-!Slider methodsFor: 'accessing' stamp: ''!
+!Slider methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 value: aNumber
 	"Clamp to the user range. Fire changedAction only on a real change so
 	identity-mapped updates from outside the slider do not feedback-loop."
@@ -3485,11 +3492,11 @@ value: aNumber
 	self redrawNeeded.
 	changedAction ifNotNil: [changedAction valueWithPossibleArgument: self]! !
 
-!Slider methodsFor: 'events' stamp: ''!
+!Slider methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesMouseDown: anEvent
 	^ true! !
 
-!Slider methodsFor: 'events' stamp: ''!
+!Slider methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseButton1Down: anEvent localPosition: localPos
 	"Click anywhere on the slider jumps the value to that x and starts a drag.
 	Cancels any running value animation so the drag wins immediately."
@@ -3498,7 +3505,7 @@ mouseButton1Down: anEvent localPosition: localPos
 	self setValueFromX: localPos x.
 	self redrawNeeded! !
 
-!Slider methodsFor: 'events' stamp: ''!
+!Slider methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseButton1Up: anEvent localPosition: localPos
 	"End the drag. Two side effects:
 	 1. Redraw so the thumb reverts from accent to idle color.
@@ -3510,19 +3517,19 @@ mouseButton1Up: anEvent localPosition: localPos
 	committedAction ifNotNil: [
 		committedAction valueWithPossibleArgument: self]! !
 
-!Slider methodsFor: 'events' stamp: ''!
+!Slider methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseMove: anEvent localPosition: localPos
 	"Track the drag only while dragging is true (mouseMove also fires for
 	hover transitions in some hosts — we explicitly gate on the down state)."
 	dragging ifFalse: [^ self].
 	self setValueFromX: localPos x! !
 
-!Slider methodsFor: 'private' stamp: ''!
+!Slider methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 normalizedValue
 	"value mapped into [0,1] across the min..max range (0 when the range is empty)."
 	^ maxVal = minVal ifTrue: [0.0] ifFalse: [(value - minVal) / (maxVal - minVal)]! !
 
-!Slider methodsFor: 'private' stamp: ''!
+!Slider methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 setValueFromX: x
 	"Map a local x to a user value. Mirror drawOn:'s trackLeft/trackRight
 	(thumbHalfW + 8-logical inset on each side) so the cursor never overshoots
@@ -3539,7 +3546,7 @@ setValueFromX: x
 	newValue := minVal + (t * (maxVal - minVal)).
 	self value: newValue! !
 
-!Slider methodsFor: 'drawing' stamp: ''!
+!Slider methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawOn: aCanvas
 	"Track + thumb. The track insets 8 dp from the slider edges so the thumb has
 	visual headroom -- it never reaches the morph boundary. Thumb: 20x16 dp white
@@ -3566,11 +3573,11 @@ drawOn: aCanvas
 	aCanvas fillColor: Color white do: [aCanvas squircle: thumb radius: r].
 	aCanvas strokeWidth: 0.5 * s color: (text alpha: 0.28) do: [aCanvas squircle: thumb radius: r]! !
 
-!Slider methodsFor: 'drawing' stamp: ''!
+!Slider methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!Slider methodsFor: 'animation' stamp: ''!
+!Slider methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 animateValueTo: aNumber
 	"Tween value to aNumber (clamped to the range) on the shared Animator: 300ms
 	cubic-in-out. Each frame goes through value: (fires changedAction); when the
@@ -3592,7 +3599,7 @@ animateValueTo: aNumber
 				self value: to.
 				committedAction ifNotNil: [committedAction valueWithPossibleArgument: self]]]! !
 
-!SymbolCatalog methodsFor: 'initialization' stamp: ''!
+!SymbolCatalog methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize
 	"All pixel literals are logical (DPI-independent); multiplied by hostOSScaleFactor
 	so the catalog renders at the same visual size on 1x / 2x / 3x displays."
@@ -3615,7 +3622,7 @@ initialize
 	filter := ''.
 	self morphExtent: (1200 @ 400) * s! !
 
-!SymbolCatalog methodsFor: 'geometry' stamp: ''!
+!SymbolCatalog methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cellIndexAt: aPoint
 	"Return 1-based cell index whose squircle rect contains the local point, or
 	nil if the point is in the padding/gap/label gutter."
@@ -3631,7 +3638,7 @@ cellIndexAt: aPoint
 		((self cellRectAt: i) containsPoint: aPoint) ifTrue: [^ i]].
 	^ nil! !
 
-!SymbolCatalog methodsFor: 'geometry' stamp: ''!
+!SymbolCatalog methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cellRectAt: i
 	"Squircle rect for the i-th cell (1-based), in local coordinates. Layout is
 	justified: leftmost cell flush at 'padding', rightmost ends at
@@ -3650,7 +3657,7 @@ cellRectAt: i
 			x := padding + ((c * (usable - cellSize)) // (ncols - 1)) ].
 	^ x @ y corner: (x + cellSize) @ (y + cellSize)! !
 
-!SymbolCatalog methodsFor: 'geometry' stamp: ''!
+!SymbolCatalog methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cellWithLabelRectAt: i
 	"cellRectAt: i extended downward to include the two-line label below the
 	squircle, so scrolling a selection into view also reveals what it is called."
@@ -3658,7 +3665,7 @@ cellWithLabelRectAt: i
 	r := self cellRectAt: i.
 	^ r left @ r top corner: r right @ (r bottom + labelGap + labelHeight)! !
 
-!SymbolCatalog methodsFor: 'geometry' stamp: ''!
+!SymbolCatalog methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cols
 	"Columns that fit in the current width."
 	| usable |
@@ -3666,7 +3673,7 @@ cols
 	^ ((usable + gap) / (cellSize + gap)) truncated max: 1
 ! !
 
-!SymbolCatalog methodsFor: 'geometry' stamp: ''!
+!SymbolCatalog methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 contentHeightForWidth: w
 	"Height needed to lay out the current 'names' list at the given pixel width.
 	Used by morphExtent: to derive our height, and by filter: to refresh after
@@ -3678,7 +3685,7 @@ contentHeightForWidth: w
 	rowH := cellSize + labelGap + labelHeight.
 	^ (2 * padding) + (numRows * rowH) + (((numRows - 1) max: 0) * gap)! !
 
-!SymbolCatalog methodsFor: 'geometry' stamp: ''!
+!SymbolCatalog methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 glyphPointSize
 	"Point size of the symbol glyph for the current cellSize: half the cell, so
 	the glyph fills the middle (1/4 inset each side). Single source of truth used
@@ -3686,7 +3693,7 @@ glyphPointSize
 	matches the size shown in the grid."
 	^ (cellSize / 2) asInteger! !
 
-!SymbolCatalog methodsFor: 'geometry' stamp: ''!
+!SymbolCatalog methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 morphExtent: aPoint
 	"Honour the requested width (clamped to a minimum that fits one cell);
 	height is always derived from the current names list via contentHeightForWidth:.
@@ -3695,12 +3702,12 @@ morphExtent: aPoint
 	w := aPoint x asInteger max: ((2 * padding) + cellSize).
 	super morphExtent: w @ (self contentHeightForWidth: w)! !
 
-!SymbolCatalog methodsFor: 'geometry' stamp: ''!
+!SymbolCatalog methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 rows
 	^ (names size + self cols - 1) // self cols
 ! !
 
-!SymbolCatalog methodsFor: 'private' stamp: ''!
+!SymbolCatalog methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 revealCellAt: i
 	"Scroll the enclosing PluggableScrollPane so cell i (and its label) is
 	visible. Computes the offset against the CURRENT viewport range — the
@@ -3721,7 +3728,7 @@ revealCellAt: i
 	rect bottom > viewportBottom ifTrue: [
 		^ sp scrollBy: 0 @ (viewportBottom - rect bottom)]! !
 
-!SymbolCatalog methodsFor: 'private' stamp: ''!
+!SymbolCatalog methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 scrollPane
 	"Enclosing PluggableScrollPane, or nil if the catalog is not inside one.
 	Used to reset scroll on filter changes and to keep keyboard-navigated
@@ -3731,7 +3738,7 @@ scrollPane
 	[o notNil and: [(o isKindOf: PluggableScrollPane) not]] whileTrue: [o := o owner].
 	^ o! !
 
-!SymbolCatalog methodsFor: 'private' stamp: ''!
+!SymbolCatalog methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 truncate: aString toWidth: maxWidth font: aFont
 	"Return aString, or aString trimmed with a 3-dot ellipsis if it doesn't fit."
 	| ellipsis n s |
@@ -3743,7 +3750,7 @@ truncate: aString toWidth: maxWidth font: aFont
 	^ n = 0 ifTrue: [ellipsis] ifFalse: [s]
 ! !
 
-!SymbolCatalog methodsFor: 'private' stamp: ''!
+!SymbolCatalog methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 visibleIndexRangeOn: aCanvas
 	"Return the Interval of cell indices whose row overlaps the canvas clipRect
 	(plus a small overscan above/below). The clipRect is in display (targetForm)
@@ -3768,7 +3775,7 @@ visibleIndexRangeOn: aCanvas
 	firstRow > lastRow ifTrue: [^ 1 to: 0].
 	^ ((firstRow * ncols) + 1) to: (((lastRow + 1) * ncols) min: names size)! !
 
-!SymbolCatalog methodsFor: 'private' stamp: ''!
+!SymbolCatalog methodsFor: 'private' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 wrap: aString toWidth: maxWidth font: aFont maxLines: maxLines
 	"Greedy word-wrap aString into at most maxLines lines fitting in maxWidth px.
 	Break points are spaces, dots, hyphens, and underscores. SPACES at a line
@@ -3816,7 +3823,7 @@ wrap: aString toWidth: maxWidth font: aFont maxLines: maxLines
 				remaining := remaining copyFrom: start to: remaining size]].
 	^ lines asArray! !
 
-!SymbolCatalog methodsFor: 'drawing' stamp: ''!
+!SymbolCatalog methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawOn: aCanvas
 	"Virtualized: only draw cells whose row intersects the canvas clipRect.
 	Per-cell: squircle frame (accent color, thicker stroke when selected;
@@ -3862,12 +3869,12 @@ drawOn: aCanvas
 			ly := rect bottom + labelGap + ((idx - 1) * lineH).
 			aCanvas drawString: ln at: lx @ ly font: labelFont color: labelColor]]! !
 
-!SymbolCatalog methodsFor: 'drawing' stamp: ''!
+!SymbolCatalog methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 requiresVectorCanvas
 	^ true
 ! !
 
-!SymbolCatalog methodsFor: 'accessing' stamp: ''!
+!SymbolCatalog methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cellSize: logicalPx
 	"Set cell side length to logicalPx (logical/DPI-independent). Grows the
 	scroller's clip bounds CHEAPLY so live drag is not clipped to the old
@@ -3887,12 +3894,12 @@ cellSize: logicalPx
 	self privateExtent: w @ (self contentHeightForWidth: w).
 	self redrawNeeded! !
 
-!SymbolCatalog methodsFor: 'accessing' stamp: ''!
+!SymbolCatalog methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 filter
 	^ filter
 ! !
 
-!SymbolCatalog methodsFor: 'accessing' stamp: ''!
+!SymbolCatalog methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 filter: aString
 	"Narrow visible symbols to names containing aString (case-insensitive).
 	Empty / nil filter restores the full list. Selection is cleared whenever
@@ -3912,20 +3919,20 @@ filter: aString
 	filterChangedAction ifNotNil: [
 		filterChangedAction valueWithPossibleArgument: self]! !
 
-!SymbolCatalog methodsFor: 'accessing' stamp: ''!
+!SymbolCatalog methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 filterChangedAction: aBlock
 	"Block fired after filter: changes the visible set. Argument is the
 	catalog itself, so observers can query names/allNames sizes."
 	filterChangedAction := aBlock
 ! !
 
-!SymbolCatalog methodsFor: 'accessing' stamp: ''!
+!SymbolCatalog methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 filteredCount
 	"Number of symbols currently visible (after filtering)."
 	^ names size
 ! !
 
-!SymbolCatalog methodsFor: 'accessing' stamp: ''!
+!SymbolCatalog methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 relayout
 	"Recompute the catalog's morphExtent (height changes when cellSize
 	changed via #cellSize:) and repaint. Triggers the scroll-pane cascade
@@ -3934,7 +3941,7 @@ relayout
 	self morphExtent: self morphExtent.
 	self redrawNeeded! !
 
-!SymbolCatalog methodsFor: 'events' stamp: ''!
+!SymbolCatalog methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 dragThreshold
 	"Logical-pixel distance past which a mouseMove during a click escalates
 	the click into a drag-out. 4 logical px is the conventional click-vs-drag
@@ -3943,17 +3950,17 @@ dragThreshold
 	time threshold, not a distance.)"
 	^ 4 * DisplayScreen hostOSScaleFactor! !
 
-!SymbolCatalog methodsFor: 'events' stamp: ''!
+!SymbolCatalog methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesKeyboardFocus
 	"Yes — arrow keys navigate the selected cell."
 	^ true! !
 
-!SymbolCatalog methodsFor: 'events' stamp: ''!
+!SymbolCatalog methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesMouseDown: anEvent
 	"Yes — used to start a drag-out of a fresh SymbolMorph for the clicked cell."
 	^ true! !
 
-!SymbolCatalog methodsFor: 'events' stamp: ''!
+!SymbolCatalog methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 keyStroke: anEvent
 	"Arrow keys move the selected cell (clamped at edges; from no selection any
 	arrow picks the first cell) and reveal it (with label) inside the enclosing
@@ -3981,7 +3988,7 @@ keyStroke: anEvent
 	self redrawNeeded.
 	anEvent wasHandled: true! !
 
-!SymbolCatalog methodsFor: 'events' stamp: ''!
+!SymbolCatalog methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseButton1Down: anEvent localPosition: localPos
 	"Select the cell under the cursor and remember the start position so a
 	subsequent mouseMove past the drag threshold can spawn a SymbolMorph.
@@ -3993,13 +4000,13 @@ mouseButton1Down: anEvent localPosition: localPos
 	self world activeHand newKeyboardFocus: self.
 	self redrawNeeded! !
 
-!SymbolCatalog methodsFor: 'events' stamp: ''!
+!SymbolCatalog methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseButton1Up: anEvent localPosition: localPos
 	"Clear the drag-tracking ivars; selection persists."
 	dragStart := nil.
 	dragCell := nil! !
 
-!SymbolCatalog methodsFor: 'events' stamp: ''!
+!SymbolCatalog methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseMove: anEvent localPosition: localPos
 	"If movement since mouseDown exceeds the drag threshold, create a fresh
 	SymbolMorph for the originally-clicked cell and grab it under the hand.
@@ -4021,7 +4028,7 @@ mouseMove: anEvent localPosition: localPos
 	dragCell := nil.
 	self world activeHand grabMorph: morph moveUnderHand: true! !
 
-!SymbolCatalog class methodsFor: 'instance creation' stamp: ''!
+!SymbolCatalog class methodsFor: 'instance creation' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 open
 	"Layout:
 	  - Outer column: no padding. Toolbar on top; the scroll fills the rest,
@@ -4101,7 +4108,7 @@ open
 	window openInWorld.
 	^ window! !
 
-!SymbolCatalog class methodsFor: 'world menu' stamp: ''!
+!SymbolCatalog class methodsFor: 'world menu' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 worldMenuOptions
 	"Place 'Symbol Catalog' in the Open section of the World menu (collected by
 	DynamicMenuBuilder via #worldMenuOptions). Opens via SymbolCatalog open."
@@ -4116,7 +4123,7 @@ worldMenuOptions
 			#balloonText 	-> 		'Browse the Tabler icon font as a searchable grid'.
 		} asDictionary}`! !
 
-!Dock methodsFor: 'initialization' stamp: ''!
+!Dock methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize
 	super initialize.
 	orientation := #horizontal.
@@ -4126,50 +4133,50 @@ initialize
 	edgeGlow := 0.
 	self color: Color transparent "body is painted by drawOn: from Theme chromeBody"! !
 
-!Dock methodsFor: 'constants' stamp: ''!
+!Dock methodsFor: 'constants' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 edgeMargin
 	"Gap from the dock to its screen edge -- DERIVED as half the (visual) main-axis padding, so it stays
 	proportional to the internal end-padding and scales with the dock."
 	^ self mainPadding * self scale * 0.5! !
 
-!Dock methodsFor: 'constants' stamp: ''!
+!Dock methodsFor: 'constants' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 phi
 	^ 1.618! !
 
-!Dock methodsFor: 'orientation' stamp: ''!
+!Dock methodsFor: 'orientation' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 isLowEdge
 	"Is the dock anchored at the low-coordinate side of its cross axis (#top or #left)?
 	With isVertical this parametrizes every per-edge switch: an edge is an axis plus a sign."
 	^ self edge == #top or: [self edge == #left]! !
 
-!Dock methodsFor: 'orientation' stamp: ''!
+!Dock methodsFor: 'orientation' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 isVertical
 	^ self orientation == #vertical! !
 
-!Dock methodsFor: 'orientation' stamp: ''!
+!Dock methodsFor: 'orientation' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 orientation
 	^ orientation ifNil: [#horizontal]! !
 
-!Dock methodsFor: 'accessing' stamp: ''!
+!Dock methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 animDuration
 	"The minimize/restore (and card add/remove) fly length in ms. Configurable. Each animation-owning class keeps its own knob -- cf. StageOverview>>animDuration
 	and Dock>>switchDuration -- so there is no single global duration source."
 	^ duration ifNil: [500]! !
 
-!Dock methodsFor: 'accessing' stamp: ''!
+!Dock methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 animDuration: ms
 	duration := ms! !
 
-!Dock methodsFor: 'accessing' stamp: ''!
+!Dock methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 edge
 	"Screen edge the dock is docked to: #top, #bottom, #left or #right (default #bottom)."
 	^ edge ifNil: [#bottom]! !
 
-!Dock methodsFor: 'geometry' stamp: ''!
+!Dock methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 center
 	^ self morphPosition + (self morphExtent / 2)! !
 
-!Dock methodsFor: 'geometry' stamp: ''!
+!Dock methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 lerpByScaleFrom: atMinScale to: atMaxScale
 	"Clamped linear interpolation of a metric by the dock's current scale: atMinScale at minScale,
 	atMaxScale at maxScale, clamped-lerped between. Lets padding/edgeMargin stay relatively roomy when
@@ -4180,25 +4187,25 @@ lerpByScaleFrom: atMinScale to: atMaxScale
 	t := (t max: 0) min: 1.
 	^ atMinScale + ((atMaxScale - atMinScale) * t)! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cardFullExtent
 	"The full (un-collapsing) extent of a card: the sizing rule fed the screen aspect, uncapped --
 	a card is a miniature of the whole screen. Used as the layout fullMain so a card animating its
 	width gets a proportional gap."
 	^ self extentForAspect: Display extent x / Display extent y! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cardWidth
 	"The width to request of a SpaceCard (the card enforces the screen aspect from the requested
 	width, see SpaceCard>>morphExtent:). Always the x of the full card extent, in both orientations."
 	^ self cardFullExtent x! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 crossOf: aPoint
 	"The component of aPoint ACROSS the dock (thickness axis)."
 	^ self isVertical ifTrue: [aPoint x] ifFalse: [aPoint y]! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 dockLayoutSequence
 	"Layout order along the main axis: space cards first, then minimized tiles, each subsequence in
 	submorph order. Cards append in space order (spaces only ever append, and syncCards walks them in
@@ -4209,7 +4216,7 @@ dockLayoutSequence
 	tiles := self submorphs select: [:m | m isKindOf: DockTile].
 	^ cards , tiles! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 extentForAspect: aspect
 	"THE dock sizing rule: an extent whose cross axis is fixed at crossDim and whose main axis
 	tracks the given aspect ratio (width/height). Tiles and cards are both instances of this rule;
@@ -4218,19 +4225,19 @@ extentForAspect: aspect
 	cross := self crossDim.
 	^ self main: (self isVertical ifTrue: [cross / aspect] ifFalse: [cross * aspect]) cross: cross! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 main: m cross: c
 	"Compose a Point from a main-axis and a cross-axis component, for the current orientation.
 	Inverse of mainOf:/crossOf: -- the three fold every (vertical ifTrue: [a@b] ifFalse: [b@a])
 	pair in the layout code into axis-free algebra."
 	^ self isVertical ifTrue: [c @ m] ifFalse: [m @ c]! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mainOf: aPoint
 	"The component of aPoint along the dock's MAIN (stacking) axis."
 	^ self isVertical ifTrue: [aPoint y] ifFalse: [aPoint x]! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 refit
 	"Re-fit every dock item to its full extent for the current axis (each item knows how, see
 	refitIn: on DockTile and SpaceCard), then re-anchor the dock. Used on orientation flip /
@@ -4238,7 +4245,7 @@ refit
 	self submorphs do: [:m | m refitIn: self].
 	self reflow! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 reflow
 	"Lay out the tiles, apply the effective scale, then anchor the dock flush against its current
 	screen edge, centred along that edge. Effective scale = min(preferredScale, fitScale): an
@@ -4261,7 +4268,7 @@ reflow
 	crossPos := self isLowEdge ifTrue: [m] ifFalse: [(self crossOf: we) - (self crossOf: de) - m].
 	self morphPosition: (self main: (mainPos max: 0) truncated cross: (crossPos max: 0) truncated)! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 relayout
 	"Lay out the items along the main axis, each centred on the cross axis (crossDim). Each item carries
 	a half-gap (gap/2 * fill) on both sides; starting/ending the offset at mainPadding - gap/2 cancels the
@@ -4283,7 +4290,7 @@ relayout
 	offset := offset + mainPad - (self gap / 2).
 	self morphExtent: (self main: offset cross: crossExt)! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 removedMorph: aMorph
 	"Any dock item leaving -- a tile or card removed by a halo close, a deletion, whatever --
 	must close the gap, so reflow unconditionally (the dock only ever holds DockTiles and
@@ -4293,7 +4300,7 @@ removedMorph: aMorph
 	super removedMorph: aMorph.
 	self reflow! !
 
-!Dock methodsFor: 'layout' stamp: ''!
+!Dock methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 tileExtentFor: aspect
 	"extentForAspect: with the main axis clamped into [cross/phi, cross*phi]: a tile is never more
 	elongated than the golden ratio in EITHER direction along the stacking axis. Windows outside
@@ -4303,33 +4310,33 @@ tileExtentFor: aspect
 	e := self extentForAspect: aspect.
 	^ self main: (((self mainOf: e) min: self crossDim * self phi) max: self crossDim / self phi) cross: self crossDim! !
 
-!Dock methodsFor: 'action' stamp: ''!
+!Dock methodsFor: 'action' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 minimize: aWindow
 	"Fly aWindow into a new tile in this dock; the tile owns the whole flight (see
 	DockTile>>minimize:into:). No-op if already docked."
 	(self tileFor: aWindow) ifNotNil: [^ self].
 	DockTile new minimize: aWindow into: self! !
 
-!Dock methodsFor: 'events' stamp: ''!
+!Dock methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 collapse
 	"Chrome: the dock itself does not collapse into a dock."
 	^ self! !
 
-!Dock methodsFor: 'events' stamp: ''!
+!Dock methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesMouseDown: evt
 	"Right-click (menu) always; left-click only when the resize affordance is showing, to begin a
 	resize drag from the outer edge."
 	^ evt mouseButton2Changed or: [evt mouseButton1Changed and: [resizeState is: #ready]]! !
 
-!Dock methodsFor: 'events' stamp: ''!
+!Dock methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesMouseHover
 	^ true! !
 
-!Dock methodsFor: 'events' stamp: ''!
+!Dock methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesMouseOver: evt
 	^ true! !
 
-!Dock methodsFor: 'events' stamp: ''!
+!Dock methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseButton1Down: evt localPosition: p
 	"Begin a resize drag: capture the hand and start stepping. step polls the hand, so the drag does
 	not depend on mouseMove: delivery (the hand drives drag-resize via stepping, as in
@@ -4338,13 +4345,13 @@ mouseButton1Down: evt localPosition: p
 	dragHand := evt hand.
 	self startStepping! !
 
-!Dock methodsFor: 'events' stamp: ''!
+!Dock methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseButton1Up: evt localPosition: p
 	"Backup end-of-drag (step also detects release by polling the hand button). endResize is inert
 	unless resizing -- #release only exists on #resizing."
 	self endResize! !
 
-!Dock methodsFor: 'events' stamp: ''!
+!Dock methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseHover: evt localPosition: p
 	"Track the pointer over the dock (button up). Entering the outer-edge band arms the 100ms timer;
 	drifting off the band disarms. Both hover events live only on the chart's hover states, so this
@@ -4355,13 +4362,13 @@ mouseHover: evt localPosition: p
 			self world addAlarm: #armResize withArguments: #() for: self at: Time localMillisecondClock + 100]]
 		ifFalse: [resizeState fire: #leaveEdge]! !
 
-!Dock methodsFor: 'events' stamp: ''!
+!Dock methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseLeave: evt
 	"Clear the affordance on a genuine button-up leave; never during a resize drag (#leaveEdge has
 	no edge from #resizing)."
 	evt anyButtonPressed ifFalse: [resizeState fire: #leaveEdge]! !
 
-!Dock methodsFor: 'events' stamp: ''!
+!Dock methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 wasDeleted: aMorph
 	"Taskbar protocol: the World announces every submorph removal here -- both genuine deletes and mere
 	reparents (hand grabs, stows into cards, minimize flights into tiles). The Morph contract tells them
@@ -4373,14 +4380,14 @@ wasDeleted: aMorph
 	(aMorph isManagedDesktopMorph and: [aMorph owner isNil])
 		ifTrue: [Stage default forget: aMorph]! !
 
-!Dock methodsFor: 'events' stamp: ''!
+!Dock methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 wasOpened: aMorph
 	"Taskbar protocol: the World sends this when a morph is added. Route into the Stage: manage: is
 	idempotent (a restore re-add or a hand drop-back is a no-op there) and reconciles spaces; the
 	dock's stage listener routes #managed to the overview when it is open."
 	aMorph isManagedDesktopMorph ifTrue: [Stage default manage: aMorph]! !
 
-!Dock methodsFor: 'drawing' stamp: ''!
+!Dock methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawOn: aCanvas
 	"Squircle glass body: Theme chromeBody at a lighter alpha (0.72) than menus -- the
 	dock floats over the wallpaper and should read as glass, not card. The corner radius
@@ -4392,7 +4399,7 @@ drawOn: aCanvas
 	aCanvas fillColor: (Theme current chromeBody alpha: 0.72) do: [
 		aCanvas squircle: bounds radius: r]! !
 
-!Dock methodsFor: 'drawing' stamp: ''!
+!Dock methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 postDrawOn: aCanvas
 	"Chrome edge on top of the tiles: inner highlight + outer hairline, the same stroke
 	widths the windows use. The inner highlight brightens with edgeGlow (0..1, animated
@@ -4409,11 +4416,11 @@ postDrawOn: aCanvas
 		inner: inner outer: Theme current chromeHairline.
 	^ true! !
 
-!Dock methodsFor: 'drawing' stamp: ''!
+!Dock methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!Dock methodsFor: 'menu' stamp: ''!
+!Dock methodsFor: 'menu' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 checkIcon
 	"A vector check SymbolMorph marking the dock's current edge in the Position
 	menu (no bitmap). Sized to match the submenu chevron (13 logical px)."
@@ -4425,7 +4432,7 @@ checkIcon
 	m morphExtent: (13 * s) @ (13 * s).
 	^ m! !
 
-!Dock methodsFor: 'menu' stamp: ''!
+!Dock methodsFor: 'menu' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 getMenu
 	"Right-click contextual menu: snap the dock to a screen edge, table-driven. A check marks
 	the dock's current edge; the icon slot is reserved on every item so labels stay aligned."
@@ -4438,7 +4445,7 @@ getMenu
 	menu add: 'Position' subMenu: sub.
 	^ menu! !
 
-!Dock methodsFor: 'taskbar' stamp: ''!
+!Dock methodsFor: 'taskbar' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 refreshTaskbarFor: aMorph
 	"Taskbar protocol hook -- the world's taskbar is this Dock, so MenuMorph>>stayUp:
 	sends this when a menu is made to stay up (e.g. when you halo a menu item).
@@ -4447,7 +4454,7 @@ refreshTaskbarFor: aMorph
 	Ignore them so the halo and stay-up box work without a dock representation."
 	^ self! !
 
-!Dock methodsFor: 'taskbar' stamp: ''!
+!Dock methodsFor: 'taskbar' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 screenSizeChanged
 	"Taskbar protocol: the World sends this on display/extent change (including a host-OS scale
 	change, e.g. moving the image between a 2x and a 1x display). REFIT -- not just reflow -- so the
@@ -4456,22 +4463,22 @@ screenSizeChanged
 	when resumed on a 1x display). refit resizes every item and re-anchors."
 	self refit! !
 
-!Dock methodsFor: 'metrics' stamp: ''!
+!Dock methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 crossDim
 	"Logical 50px (the nice base size at scale 1), scaled to physical px for the current display."
 	^ 50 * DisplayScreen hostOSScaleFactor! !
 
-!Dock methodsFor: 'metrics' stamp: ''!
+!Dock methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 crossExtent
 	"Unscaled cross-axis (thickness) extent of the dock: crossDim plus crossPadding both sides."
 	^ self crossDim + (2 * self crossPadding)! !
 
-!Dock methodsFor: 'metrics' stamp: ''!
+!Dock methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 crossPadding
 	"Inset on the CROSS (thickness) axis -- space on each side of the tiles across the dock."
 	^ self lerpTune: #crossPaddingSmall default: 16 to: #crossPaddingLarge default: 10! !
 
-!Dock methodsFor: 'metrics' stamp: ''!
+!Dock methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 fitScale
 	"The largest applied scale at which the dock (at its CURRENT unscaled extent, so call after
 	relayout) fits along its screen edge, keeping edgeMargin of breathing room at both ends."
@@ -4481,35 +4488,35 @@ fitScale
 	avail := (self mainOf: world morphExtent) - (2 * self edgeMargin).
 	^ avail / (self mainOf: self morphExtent)! !
 
-!Dock methodsFor: 'metrics' stamp: ''!
+!Dock methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 gap
 	"Space between adjacent tiles."
 	^ self lerpTune: #gapSmall default: 12 to: #gapLarge default: 8! !
 
-!Dock methodsFor: 'metrics' stamp: ''!
+!Dock methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 lerpTune: smallKey default: a to: largeKey default: b
 	"A scale-lerped, tunable metric (roomy when the dock is small, sleek when large), logical px ->
 	physical. The shared shape of gap / crossPadding / mainPadding."
 	^ (self lerpByScaleFrom: (self tuneAt: smallKey default: a) to: (self tuneAt: largeKey default: b))
 		* DisplayScreen hostOSScaleFactor! !
 
-!Dock methodsFor: 'metrics' stamp: ''!
+!Dock methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mainPadding
 	"Inset at the START and END of the MAIN (layout) axis -- space before the first tile and after the last."
 	^ self lerpTune: #mainPaddingSmall default: 24 to: #mainPaddingLarge default: 16! !
 
-!Dock methodsFor: 'metrics' stamp: ''!
+!Dock methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 preferredScale
 	"The scale the user asked for via edge-drag -- the INTENT. The applied (location) scale is
 	min(preferredScale, fitScale), so an overfull dock shrinks below intent and grows back as tiles
 	leave (see reflow)."
 	^ preferredScale ifNil: [self scale]! !
 
-!Dock methodsFor: 'metrics' stamp: ''!
+!Dock methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 preferredScale: aNumber
 	preferredScale := aNumber! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 armResize
 	"Alarm callback ~100ms after the pointer settled on the outer edge: show the resize affordance --
 	the matching resize cursor and a brightened inner stroke. Inert unless still #armed (a hover-off
@@ -4518,7 +4525,7 @@ armResize
 	Cursor currentCursor: (Cursor resizeForEdge: self outerEdge).
 	self glowTo: 1.0! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 clearAffordance
 	"Entry action for the chart's #idle (see resizeChart): cancel any pending arm alarm, restore the
 	cursor, fade the glow. Runs on every transition INTO #idle -- #leaveEdge and #release alike -- so
@@ -4527,7 +4534,7 @@ clearAffordance
 	Cursor currentCursor: Cursor normalCursor.
 	self glowTo: 0.0! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 endResize
 	"Stop the resize drag: #release returns the chart to #idle (whose entry action clears the
 	affordance); tear down the stepping and the hand capture. Inert unless resizing."
@@ -4535,7 +4542,7 @@ endResize
 	self stopStepping.
 	dragHand := nil! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 glowTo: target
 	"Smoothly tween the inner-stroke brightness (edgeGlow 0..1) to target via the Animator. No-op if
 	already there."
@@ -4548,7 +4555,7 @@ glowTo: target
 		edgeGlow := target.
 		self redrawNeeded]! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 isOnOuterEdge: p
 	"Is local point p within the grab band (one crossPadding deep) along the current outer edge?
 	The outer edge is the side away from the anchored screen edge: high local cross-coordinate for
@@ -4560,22 +4567,22 @@ isOnOuterEdge: p
 		ifTrue: [c >= ((self crossOf: self morphExtent) - band)]
 		ifFalse: [c <= band]! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 maxScale
 	^ 2.0! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 minScale
 	^ 0.4! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 outerEdge
 	"The screen edge opposite the docked edge -- the grabbable outer edge for resizing."
 	^ self isVertical
 		ifTrue: [self isLowEdge ifTrue: [#right] ifFalse: [#left]]
 		ifFalse: [self isLowEdge ifTrue: [#bottom] ifFalse: [#top]]! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 resizeChart
 	"The outer-edge resize affordance as a flat chart: hovering onto the band arms a 100ms timer, the
 	timer shows the affordance (#ready: resize cursor + glow), a grab drags, release returns to #idle.
@@ -4591,7 +4598,7 @@ resizeChart
 	chart onTransition: [:c | (c is: #idle) ifTrue: [self clearAffordance]].
 	^ chart! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 scaleForOuterEdgeAt: aWorldPoint
 	"Scale that puts the outer edge under aWorldPoint: visual thickness from the anchored edge to the
 	cursor, over the unscaled cross extent. Caller clamps to [minScale, maxScale]."
@@ -4603,7 +4610,7 @@ scaleForOuterEdgeAt: aWorldPoint
 		ifFalse: [(self crossOf: self world morphExtent) - m - c].
 	^ thickness / self crossExtent! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 step
 	"While resizing, pin the outer edge under the cursor (read from the hand last mouse event): its
 	position sets the preferred scale (clamped); reflow applies the effective scale, so dragging
@@ -4620,11 +4627,11 @@ step
 			self redrawNeeded]
 		ifFalse: [self endResize]! !
 
-!Dock methodsFor: 'resize' stamp: ''!
+!Dock methodsFor: 'resize' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 stepTime
 	^ 16! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 addCard: aCard
 	"Add a window-group card as a dock item and animate it growing from nothing."
 	aCard morphExtent: 0 @ 0.
@@ -4632,7 +4639,7 @@ addCard: aCard
 	self reflow.
 	self animateCardWidth: aCard from: 0 to: self cardWidth onDone: []! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 animateCardWidth: aCard from: a to: b onDone: aBlock
 	"Tween aCard requested width from a to b, reflowing each frame so the neighbours slide smoothly,
 	then run aBlock and re-anchor. The grow and shrink choreographies are both this tween."
@@ -4642,7 +4649,7 @@ animateCardWidth: aCard from: a to: b onDone: aBlock
 		duration: self animDuration
 		onDone: [aCard morphExtent: b @ 0. aBlock value. self reflow]! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cardAtWorldPoint: aWorldPoint
 	"The SpaceCard whose on-screen area covers aWorldPoint -- the drop target while a window is dragged
 	between cards. Cards are unlocked chrome, so displayFullBounds (world pixel bounds) is reliable. nil
@@ -4651,12 +4658,12 @@ cardAtWorldPoint: aWorldPoint
 		detect: [:m | (m isKindOf: SpaceCard) and: [(m displayFullBounds notNil) and: [m displayFullBounds containsPoint: aWorldPoint]]]
 		ifNone: [nil]! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 cardFor: aSpace
 	"The card rendering aSpace, or nil."
 	^ self submorphs detect: [:m | (m isKindOf: SpaceCard) and: [m space == aSpace]] ifNone: [nil]! !
 
-!Dock methodsFor: 'stage choreography' stamp: 'ML 3/Jul/2026 14:41:44'!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 3/Jul/2026, 12:41:44 pm (UTC)'!
 connectStage
 	"Register this dock as the Stage's view: switches fly through performSwitch:, space
 	changes reshape the cards, #settled repaints every card so the accent frame lands on
@@ -4673,7 +4680,7 @@ connectStage
 			self submorphs do: [:m | (m isKindOf: SpaceCard) ifTrue: [m redrawNeeded]]]]
 		for: #dock! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 performSwitch: aSpace
 	"Make the desktop catch up with the Stage (#switch arrived: `active` is already aSpace, `shown` still
 	the old space): first repaint every card so the accent frame jumps to the new space AT ONCE (it tracks
@@ -4694,7 +4701,7 @@ performSwitch: aSpace
 			delay := (self switchDuration * (1 - self switchOverlapFraction)) max: 1.
 			Animator default after: delay do: [newCard releaseWindows]]! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 positionAtEdge: aSymbol
 	"Snap the dock to a screen edge. Top/bottom => horizontal orientation, left/right => vertical.
 	Re-fits the tiles for the new axis and re-anchors instantly (no animation), then asks the Stage
@@ -4704,30 +4711,30 @@ positionAtEdge: aSymbol
 	self refit.
 	Stage default settleWindowsIntoArena! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 removeCardAnimated: aCard onDone: aBlock
 	"Shrink aCard to nothing, then run aBlock and delete it."
 	self animateCardWidth: aCard from: aCard morphExtent x to: 0 onDone: [aBlock value. aCard delete]! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 screenStrut
 	"The screen-edge strip this dock reserves: its edge and the thickness from the screen edge to
 	the dock's outer visual bound (edgeMargin + scaled cross extent). Consumed by Stage>>arena."
 	self world ifNil: [^ self edge -> 0].
 	^ self edge -> (self edgeMargin + (self crossOf: self morphExtent * self scale))! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 switchDuration
 	"The stow/release cluster-fly length in ms; SpaceCard>>flyCluster: reads this so the switch
 	overlap and the actual fly stay in lockstep."
 	^ 500! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 switchOverlapFraction
 	"How much the incoming release overlaps the outgoing stow, as a fraction of switchDuration."
 	^ 0.5! !
 
-!Dock methodsFor: 'stage choreography' stamp: ''!
+!Dock methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 syncCards
 	"Make the cards match the Stage's spaces: one card per space (newcomers animate in), no card without
 	a space (leavers animate out). Card order follows space order for newcomers; existing cards keep
@@ -4743,56 +4750,56 @@ syncCards
 		((m isKindOf: SpaceCard) and: [(stage spaces includes: m space) not])
 			ifTrue: [self removeCardAnimated: m onDone: []]]! !
 
-!Dock methodsFor: 'testing' stamp: ''!
+!Dock methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 isIncludedInTaskbar
 	"The dock is chrome, not a window -- exclude it from the taskbar/StageOverview thumbnail set
 	(Morph defaults this to true, so chrome must opt out)."
 	^ false! !
 
-!Dock methodsFor: 'testing' stamp: ''!
+!Dock methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 isSticky
 	"The dock is chrome anchored to its screen edge -- never grabbable by the hand
 	(PlacedMorph>>aboutToBeGrabbedBy: rejects the drag). Same override as the stock TaskbarMorph."
 	^ true! !
 
-!Dock methodsFor: 'testing' stamp: ''!
+!Dock methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 tileFor: aWindow
 	"The tile currently holding aWindow, or nil if it is not docked."
 	^ self submorphs detect: [:t | t window == aWindow] ifNone: [nil]! !
 
-!Dock class methodsFor: 'accessing' stamp: ''!
+!Dock class methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 current
 	"The live Blueprint dock (the world taskbar), or nil. Space cards and dock tiles are its submorphs."
 	^ self allInstances detect: [:m | m isInWorld] ifNone: [nil]! !
 
-!DockTile methodsFor: 'initialization' stamp: ''!
+!DockTile methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initialize
 	super initialize.
 	aspect := 1.0.
 	animating := false.
 	self color: Color transparent! !
 
-!DockTile methodsFor: 'accessing' stamp: ''!
+!DockTile methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 animating
 	^ animating == true! !
 
-!DockTile methodsFor: 'accessing' stamp: ''!
+!DockTile methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 animating: aBoolean
 	animating := aBoolean! !
 
-!DockTile methodsFor: 'accessing' stamp: ''!
+!DockTile methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 aspect
 	^ aspect ifNil: [1.0]! !
 
-!DockTile methodsFor: 'accessing' stamp: ''!
+!DockTile methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 homeCenter
 	^ homeCenter! !
 
-!DockTile methodsFor: 'accessing' stamp: ''!
+!DockTile methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 window
 	^ window! !
 
-!DockTile methodsFor: 'capture' stamp: ''!
+!DockTile methodsFor: 'capture' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 captureFrom: aWindow
 	"Record everything needed to fly aWindow into this card and later restore it: its home location,
 	full-size visual centre, the centre offset, the FLAT (un-rotated, UNSCALED) aspect/extent, and the
@@ -4815,7 +4822,7 @@ captureFrom: aWindow
 	self setProperty: #flatExtent toValue: flatExt.
 	self setProperty: #savedRotation toValue: ((aWindow respondsTo: #rotation) ifTrue: [aWindow rotation] ifFalse: [0])! !
 
-!DockTile methodsFor: 'capture' stamp: ''!
+!DockTile methodsFor: 'capture' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 flatFullExtentOf: aWindow
 	"The window's intrinsic UNSCALED, un-rotated (flat) extent -- independent of the scale and rotation it
 	currently has in the world. The docked card shows the morph flat and is sized to fit this intrinsic
@@ -4838,7 +4845,7 @@ flatFullExtentOf: aWindow
 	aWindow location: saved.
 	^ ext! !
 
-!DockTile methodsFor: 'animation' stamp: ''!
+!DockTile methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 flyWindowFrom: fromC corner: cornerP to: toC scaleFrom: s0 to: s1 rotationFrom: r0 to: r1 at: t
 	"One frame of the window fly: quadratic Bezier of the visual centre (control cornerP for a
 	perpendicular dock entry/exit), a linear scale lerp s0 -> s1, and a linear rotation lerp
@@ -4849,13 +4856,13 @@ flyWindowFrom: fromC corner: cornerP to: toC scaleFrom: s0 to: s1 rotationFrom: 
 		scale: s0 + ((s1 - s0) * t)
 		rotation: rr! !
 
-!DockTile methodsFor: 'animation' stamp: ''!
+!DockTile methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 placeWindowCenteredAt: aPoint scale: s
 	"Upright placement (rotation 0): the final docked state and the restore start are unrotated --
 	a minimized card shows the morph flat regardless of its rotation in the world."
 	^ self placeWindowCenteredAt: aPoint scale: s rotation: 0! !
 
-!DockTile methodsFor: 'animation' stamp: ''!
+!DockTile methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 placeWindowCenteredAt: aPoint scale: s rotation: r
 	"Place the window so its visual centre sits at aPoint, scaled by s and rotated to r. Delegates to the
 	shared Animator absolute-placement primitive, passing the captured unscaled centre offset and the
@@ -4864,7 +4871,7 @@ placeWindowCenteredAt: aPoint scale: s rotation: r
 		offset: centerOffset
 		baseRotation: ((self valueOfProperty: #savedRotation) ifNil: [0])! !
 
-!DockTile methodsFor: 'events' stamp: ''!
+!DockTile methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 closeBoxHit
 	"Halo close on a docked tile: close the WINDOW it holds (keeping the window's own save-prompt) rather
 	than deleting the tile raw. The window leaving its tile triggers DockTile>>removedMorph: -> the dock
@@ -4872,38 +4879,38 @@ closeBoxHit
 	window ifNil: [^ self delete].
 	(window respondsTo: #closeBoxHit) ifTrue: [window closeBoxHit] ifFalse: [window delete]! !
 
-!DockTile methodsFor: 'events' stamp: ''!
+!DockTile methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 collapse
 	"Chrome: a card is already a minimized representation; it does not collapse."
 	^ self! !
 
-!DockTile methodsFor: 'events' stamp: ''!
+!DockTile methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseDown: anEvent
 	^ true! !
 
-!DockTile methodsFor: 'events' stamp: ''!
+!DockTile methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseOver: anEvent
 	"Enable mouseEnter:/mouseLeave: for the hover tooltip."
 	^ true! !
 
-!DockTile methodsFor: 'events' stamp: ''!
+!DockTile methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseButton1Down: anEvent localPosition: aPoint
 	"Click a docked card to restore its window (the window inside is locked, so the click falls
 	through to the card). Hide the tooltip first. restore guards animating/undocked itself."
 	self hideTip.
 	self restore! !
 
-!DockTile methodsFor: 'events' stamp: ''!
+!DockTile methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseEnter: evt
 	"Show the title tooltip immediately on hover."
 	self showTip! !
 
-!DockTile methodsFor: 'events' stamp: ''!
+!DockTile methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseLeave: evt
 	"Cancel any pending tooltip and hide it."
 	self hideTip! !
 
-!DockTile methodsFor: 'events' stamp: ''!
+!DockTile methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 removedMorph: aMorph
 	"Our window left this tile. A restore reparents it out with animating = true, so that case is
 	excluded; otherwise the window was deleted out from under us and this tile is now empty: tell the
@@ -4916,18 +4923,18 @@ removedMorph: aMorph
 			self animating: true.
 			self collapseAnimated: owner animDuration]]! !
 
-!DockTile methodsFor: 'menu' stamp: ''!
+!DockTile methodsFor: 'menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 getMenu
 	"Forward to the owning dock so right-clicking a tile raises the dock menu."
 	^ (owner isKindOf: Dock) ifTrue: [owner getMenu] ifFalse: [super getMenu]! !
 
-!DockTile methodsFor: 'tooltip' stamp: ''!
+!DockTile methodsFor: 'tooltip' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 hideTip
 	"Delete any shown tooltip popover."
 	(self valueOfProperty: #tipPopover) ifNotNil: [:p | p delete].
 	self removeProperty: #tipPopover! !
 
-!DockTile methodsFor: 'tooltip' stamp: ''!
+!DockTile methodsFor: 'tooltip' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 showTip
 	"Show a Popover with the docked window title just outside the dock interior edge, aligned to this
 	tile, with the tail pointing back toward the dock (tailSide = the dock edge). Positions per the
@@ -4956,7 +4963,7 @@ showTip
 	self world addMorphFront: pop position: px @ py.
 	self setProperty: #tipPopover toValue: pop! !
 
-!DockTile methodsFor: 'minimize-restore' stamp: ''!
+!DockTile methodsFor: 'minimize-restore' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 collapseAnimated: ms
 	"Shrink this tile to nothing along the dock main axis over ms, reflowing the dock every frame so it
 	smoothly closes the gap, then delete the (now empty) tile. Shared by restore -- both when the window
@@ -4977,7 +4984,7 @@ collapseAnimated: ms
 		owner ifNotNil: [self delete].
 		dock reflow]! !
 
-!DockTile methodsFor: 'minimize-restore' stamp: ''!
+!DockTile methodsFor: 'minimize-restore' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 minimize: aWindow into: aDock
 	"Fly aWindow into this (fresh) tile, docking it in aDock. Mirrors into the Stage up front
 	(off-stage + flight) so the world-leave at reparent time reads as a move, not a close. Scale is
@@ -5022,7 +5029,7 @@ minimize: aWindow into: aDock
 		self animating: false.
 		Stage default flightEnded: aWindow]! !
 
-!DockTile methodsFor: 'minimize-restore' stamp: ''!
+!DockTile methodsFor: 'minimize-restore' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 restore
 	"Restore this tile's window from the dock. No-op while animating or undocked. Mirrors into the Stage
 	up front (Stage restore: clears the minimized flag and re-spaces the window to the active space) so
@@ -5063,12 +5070,12 @@ restore
 		self animating: false.
 		Stage default flightEnded: win]! !
 
-!DockTile methodsFor: 'layout' stamp: ''!
+!DockTile methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 fullExtentIn: aDock
 	"My full (uncollapsed) extent as a dock item: the tile extent for my window aspect."
 	^ aDock tileExtentFor: self aspect! !
 
-!DockTile methodsFor: 'layout' stamp: ''!
+!DockTile methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 refitIn: aDock
 	"Resize to my full extent for the dock current axis and re-fit the docked window into it: reset
 	the window to scale 1, then fit via findFullBoundsInOwner -- works for any morph (incl.
@@ -5084,7 +5091,7 @@ refitIn: aDock
 	window location: identityXf.
 	window scaleToFitInto: (0 @ 0 extent: ext)! !
 
-!SpaceCard methodsFor: 'accessing' stamp: ''!
+!SpaceCard methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 desktopMorphs
 	"Live managed desktop morphs front-to-back for THIS active card: the world's placed windows
 	(world desktopWindows) PLUS one grabbed by the hand (Morphic reparents a dragged morph into the
@@ -5099,29 +5106,29 @@ desktopMorphs
 	handManaged := hand ifNil: [#()] ifNotNil: [:h | h submorphs select: [:m | m isManagedDesktopMorph]].
 	^ (handManaged , world desktopWindows) reject: [:m | m isLocked or: [Stage default isInFlight: m]]! !
 
-!SpaceCard methodsFor: 'accessing' stamp: ''!
+!SpaceCard methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 space
 	"The Space this card renders (Stage model). nil until the Stage cutover assigns it."
 	^ space! !
 
-!SpaceCard methodsFor: 'accessing' stamp: ''!
+!SpaceCard methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 space: aSpace
 	space := aSpace! !
 
-!SpaceCard methodsFor: 'testing' stamp: ''!
+!SpaceCard methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isActive
 	"This card renders the space currently shown on the desktop. During a switch (mode #switching)
 	no card is active: the outgoing card freezes its mini-map and the incoming one shows its frozen
 	proxies until the release lands."
 	^ space notNil and: [Stage default shown == space and: [(Stage default mode is: #switching) not]]! !
 
-!SpaceCard methodsFor: 'testing' stamp: ''!
+!SpaceCard methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isIncludedInTaskbar
 	"Chrome -- excluded from the desktop scan and the Cuis taskbar. (Cuis-inherited name; really
 	means isManagedDesktopMorph, the predicate we are migrating to.)"
 	^ false! !
 
-!SpaceCard methodsFor: 'testing' stamp: ''!
+!SpaceCard methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 showsActiveFrame
 	"Whether to paint the ACCENT (vs black) screen frame. Follows the Stage's `active` -- the switch
 	TARGET, which switchTo: sets immediately -- so the accent moves to the new space the instant a switch
@@ -5129,7 +5136,7 @@ showsActiveFrame
 	mini-map / drag behaviour, staying false through the transition.)"
 	^ space notNil and: [Stage default active == space]! !
 
-!SpaceCard methodsFor: 'drawing' stamp: ''!
+!SpaceCard methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 clipsSubmorphs
 	"Clip stowed window submorphs to this card so a shrunk window never draws past the card edge
 	(which leaves trails when the bar is dragged, since Morphic only repaints the morph bounds).
@@ -5137,7 +5144,7 @@ clipsSubmorphs
 	desktop and are drawn as a mini-map in drawDesktopMiniOn:."
 	^ true! !
 
-!SpaceCard methodsFor: 'drawing' stamp: ''!
+!SpaceCard methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"Opaque desktop-coloured mini-screen backing. The window mini-reps are SUBMORPHS -- live proxies on
 	an active card, the real shrunk windows on a stowed card, frozen proxies during a transition --
@@ -5146,7 +5153,7 @@ drawOn: aCanvas
 	aCanvas fillColor: Theme current background do: [
 		aCanvas squircle: self localBounds radius: Theme current roundedMiniRadius * self hostScale]! !
 
-!SpaceCard methodsFor: 'drawing' stamp: ''!
+!SpaceCard methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 postDrawOn: aCanvas
 	"Screen frame drawn ON TOP of submorphs so it is never occluded: accent when this card's space is the
 	switch target (#showsActiveFrame -- moves the instant a switch begins, not after the fly settles),
@@ -5160,22 +5167,22 @@ postDrawOn: aCanvas
 		aCanvas squircle: self localBounds radius: Theme current roundedMiniRadius * s inset: frameW].
 	^ true! !
 
-!SpaceCard methodsFor: 'drawing' stamp: ''!
+!SpaceCard methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!SpaceCard methodsFor: 'initialization' stamp: ''!
+!SpaceCard methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initialize
 	super initialize.
 	self color: Color transparent.
 	self morphExtent: (64 * DisplayScreen hostOSScaleFactor) @ 0! !
 
-!SpaceCard methodsFor: 'geometry' stamp: ''!
+!SpaceCard methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 miniMapScale
 	"Screen-to-card scale: how much a world rectangle shrinks to fit this screen-aspect card."
 	^ self morphExtent x / self world morphExtent x! !
 
-!SpaceCard methodsFor: 'geometry' stamp: ''!
+!SpaceCard methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 morphExtent: anExtent
 	"Lock to the screen aspect ratio so the desktop mini-map never distorts; only the requested WIDTH
 	is honoured, the height follows the screen. No minimum -- the add/remove animation drives the
@@ -5185,7 +5192,7 @@ morphExtent: anExtent
 	w := anExtent x.
 	super morphExtent: w @ (w * sx y / sx x)! !
 
-!SpaceCard methodsFor: 'stepping' stamp: 'ML 3/Jul/2026 15:46:10'!
+!SpaceCard methodsFor: 'stepping' stamp: 'ML 3/Jul/2026, 1:46:10 pm (UTC)'!
 step
 	"World-cycle heartbeat first: the active card steps every cycle, making this the one
 	driver guaranteed to run after startup -- it lets the Animator reclaim frame alarms
@@ -5204,7 +5211,7 @@ step
 	ordered := (wins collect: [:w | self proxyFor: w]) reject: [:p | p isNil].
 	self proxies = ordered ifFalse: [ordered do: [:p | self addMorphBack: p]]! !
 
-!SpaceCard methodsFor: 'stepping' stamp: ''!
+!SpaceCard methodsFor: 'stepping' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 stepTime
 	"Poll fast so the active mini-map tracks moving/flying windows smoothly. Cheap when nothing
 	moved: Animator placeMorph:... skips placements equal to the current one, so a static desktop
@@ -5212,15 +5219,15 @@ stepTime
 	short-circuit immediately."
 	^ 16! !
 
-!SpaceCard methodsFor: 'stepping' stamp: ''!
+!SpaceCard methodsFor: 'stepping' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 wantsSteps
 	^ true! !
 
-!SpaceCard methodsFor: 'events' stamp: ''!
+!SpaceCard methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseDown: anEvent
 	^ true! !
 
-!SpaceCard methodsFor: 'events' stamp: ''!
+!SpaceCard methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseButton1Down: anEvent localPosition: aPoint
 	"Begin a possible drag: record the window under the cursor (or nil) and the grab point, then #press into #armed.
 	A release without crossing the threshold fires #cancel (a click -> toggle/switch); a threshold crossing in
@@ -5229,7 +5236,7 @@ mouseButton1Down: anEvent localPosition: aPoint
 	self setProperty: #dragStart toValue: anEvent eventPosition.
 	self dragChart fire: #press! !
 
-!SpaceCard methodsFor: 'events' stamp: ''!
+!SpaceCard methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseButton1Up: anEvent localPosition: aPoint
 	"End the gesture by chart state. #armed (no drag): #cancel -> idle, then the click action -- an active card
 	toggles the overview, a stowed card switches to its space. #lifting (pickup still flying the window in): record
@@ -5253,7 +5260,7 @@ mouseButton1Up: anEvent localPosition: aPoint
 		chart fire: #drop.
 		^ self redrawNeeded]! !
 
-!SpaceCard methodsFor: 'events' stamp: ''!
+!SpaceCard methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseMove: anEvent localPosition: aPoint
 	"Drive the drag by chart state. #armed: past the threshold (with a window under the grab) fire #lift (active ->
 	pickup) or #carry (stowed) and do the mechanical lift. #lifting: trail the carry-rect placeholder on the cursor.
@@ -5274,7 +5281,7 @@ mouseMove: anEvent localPosition: aPoint
 		Animator placeMorph: win centeredAt: here scale: (self valueOfProperty: #dragCarryScale)
 			rotation: ((self valueOfProperty: #dragRotation) ifNil: [0]) offset: (self valueOfProperty: #dragOffset) baseRotation: 0]! !
 
-!SpaceCard methodsFor: 'events' stamp: ''!
+!SpaceCard methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 removedMorph: aMorph
 	"A real stowed window was destroyed while stowed in this card: the Stage forgets it so a later
 	release does not fly a dead window (reconcile then keeps exactly one empty space). A release
@@ -5284,7 +5291,7 @@ removedMorph: aMorph
 	(aMorph isManagedDesktopMorph and: [(Stage default isInFlight: aMorph) not])
 		ifTrue: [Stage default forget: aMorph]! !
 
-!SpaceCard methodsFor: 'mini-map' stamp: ''!
+!SpaceCard methodsFor: 'mini-map' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addFrozenProxyFor: aWindow home: aHome
 	"Add a proxy at aWindow eventual HOME placement -- centre = aHome key (world centre captured at
 	collapse) mapped by miniMapScale, extent = its captured full-size flat extent (#bpHomeFlatExtent)
@@ -5306,7 +5313,7 @@ addFrozenProxyFor: aWindow home: aHome
 		rotation: (self miniRotationOf: aWindow).
 	^ p! !
 
-!SpaceCard methodsFor: 'mini-map' stamp: ''!
+!SpaceCard methodsFor: 'mini-map' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addProxyMorphFor: aWindow
 	"Add a fresh proxy linked to aWindow (caller syncs its geometry)."
 	| p |
@@ -5315,7 +5322,7 @@ addProxyMorphFor: aWindow
 	self addMorph: p.
 	^ p! !
 
-!SpaceCard methodsFor: 'mini-map' stamp: ''!
+!SpaceCard methodsFor: 'mini-map' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 flatExtentOf: aMorph
 	"On-screen un-rotated extent for the mini-map: morphExtent * scale when available (rotation-
 	independent); otherwise the AABB extent (findFullBoundsInOwner), correct for the un-rotated case --
@@ -5324,7 +5331,7 @@ flatExtentOf: aMorph
 		ifNil: [aMorph findFullBoundsInOwner extent]
 		ifNotNil: [:e | e * aMorph scale]! !
 
-!SpaceCard methodsFor: 'mini-map' stamp: ''!
+!SpaceCard methodsFor: 'mini-map' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 miniRotationOf: aMorph
 	"Rotation to draw the proxy with -- only when we have a true flat extent (morphExtent) to rotate;
 	for AABB-fallback morphs use 0 so the already rotation-inflated AABB is not rotated twice."
@@ -5332,7 +5339,7 @@ miniRotationOf: aMorph
 		ifTrue: [aMorph rotation]
 		ifFalse: [0]! !
 
-!SpaceCard methodsFor: 'mini-map' stamp: ''!
+!SpaceCard methodsFor: 'mini-map' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 placeProxy: aProxy at: localCenter extent: ext rotation: theta
 	"Place aProxy so its centre sits at localCenter (card-local), sized ext and rotated theta. Delegates to
 	the shared Animator placement primitive (scale 1, centre offset = ext/2) rather than re-deriving the
@@ -5340,22 +5347,22 @@ placeProxy: aProxy at: localCenter extent: ext rotation: theta
 	aProxy morphExtent: ext.
 	Animator placeMorph: aProxy centeredAt: localCenter scale: 1 rotation: theta offset: ext / 2 baseRotation: 0! !
 
-!SpaceCard methodsFor: 'mini-map' stamp: ''!
+!SpaceCard methodsFor: 'mini-map' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 proxies
 	"The window mini-rep proxy morphs in this card (live on an active card, frozen during a transition)."
 	^ self submorphs select: [:m | m isKindOf: WindowProxyMorph]! !
 
-!SpaceCard methodsFor: 'mini-map' stamp: ''!
+!SpaceCard methodsFor: 'mini-map' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 proxyFor: aWindow
 	"The proxy mirroring aWindow, or nil."
 	^ self submorphs detect: [:m | (m isKindOf: WindowProxyMorph) and: [m window == aWindow]] ifNone: [nil]! !
 
-!SpaceCard methodsFor: 'mini-map' stamp: ''!
+!SpaceCard methodsFor: 'mini-map' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 removeProxyFor: aWindow
 	"Drop the proxy mirroring aWindow -- its real shrunk window has just landed as a card submorph."
 	(self proxyFor: aWindow) ifNotNil: [:p | p delete]! !
 
-!SpaceCard methodsFor: 'mini-map' stamp: ''!
+!SpaceCard methodsFor: 'mini-map' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 syncProxy: aProxy to: aWindow
 	"Place/refresh a live proxy mirroring aWindow (a desktop window): its world VISUAL CENTRE and FLAT
 	(un-rotated) extent mapped by miniMapScale into card-local, plus the window rotation and colour.
@@ -5374,7 +5381,7 @@ syncProxy: aProxy to: aWindow
 		extent: (self flatExtentOf: aWindow) * miniScale
 		rotation: (self miniRotationOf: aWindow)! !
 
-!SpaceCard methodsFor: 'stage choreography' stamp: ''!
+!SpaceCard methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 captureClusterTransformOf: aMorph
 	"Stash the unscaled origin->centre offset and rotation placeMember needs to fly aMorph absolutely.
 	Intrinsic and scale-invariant, so capturing once -- at stow from the home state, at release from the
@@ -5382,7 +5389,7 @@ captureClusterTransformOf: aMorph
 	aMorph setProperty: #bpClusterOffset toValue: (Animator centerOffsetOf: aMorph).
 	aMorph setProperty: #bpClusterRotation toValue: ((aMorph respondsTo: #rotation) ifTrue: [aMorph rotation] ifFalse: [0])! !
 
-!SpaceCard methodsFor: 'stage choreography' stamp: ''!
+!SpaceCard methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 clusterAnchorsFor: wins
 	"Geometry shared by stow and release. cwb is this card's bounds in the world; worldMini scales the
 	mini-map against the world. anchorHome is the cluster's HOME centroid (mean of the windows' Placement
@@ -5397,7 +5404,7 @@ clusterAnchorsFor: wins
 	vertical := (owner respondsTo: #isVertical) and: [owner isVertical].
 	^ { worldMini. anchorHome. anchorCard. Animator dockCornerNear: anchorCard far: anchorHome vertical: vertical }! !
 
-!SpaceCard methodsFor: 'stage choreography' stamp: ''!
+!SpaceCard methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 flyCluster: wins collapsing: collapsing onDone: doneBlock
 	"Fly wins as ONE RIGID cluster on this card's animation -- the whole of what stow and release share.
 	`collapsing` selects direction: stowing shrinks the shared scale 1 -> worldMini and arcs the centroid
@@ -5431,7 +5438,7 @@ flyCluster: wins collapsing: collapsing onDone: doneBlock
 		duration: ((owner respondsTo: #switchDuration) ifTrue: [owner switchDuration] ifFalse: [500])
 		onDone: doneBlock! !
 
-!SpaceCard methodsFor: 'stage choreography' stamp: ''!
+!SpaceCard methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 placeMember: w centeredAt: aPoint scale: s
 	"Place one cluster member absolutely at aPoint/scale using its captured unscaled centre offset and
 	rotation (held constant -- the cluster never re-rotates its members). The single placement call shared
@@ -5442,7 +5449,7 @@ placeMember: w centeredAt: aPoint scale: s
 		offset: (w valueOfProperty: #bpClusterOffset)
 		baseRotation: rot! !
 
-!SpaceCard methodsFor: 'stage choreography' stamp: ''!
+!SpaceCard methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 releaseWindows
 	"Release this card's stowed windows back to the desktop as ONE RIGID cluster (see flyCluster:) and
 	report the settle to the Stage when the fly lands. A stowed window with no Placement home cannot be
@@ -5476,7 +5483,7 @@ releaseWindows
 		stage switchSettled.
 		self redrawNeeded]! !
 
-!SpaceCard methodsFor: 'stage choreography' stamp: ''!
+!SpaceCard methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 stowWindows
 	"Stow the desktop windows into this card as ONE RIGID cluster: write each window's home (centre ->
 	scale) into its Placement, mark it in flight, then fly them all together via flyCluster:. onDone stows
@@ -5507,25 +5514,25 @@ stowWindows
 		self redrawNeeded].
 	^ true! !
 
-!SpaceCard methodsFor: 'stage choreography' stamp: ''!
+!SpaceCard methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 stowedWindows
 	"The real windows stowed in this card, front-to-back (submorph order IS the stow order; the
 	mini-map proxies are WindowProxyMorphs and are not windows)."
 	^ self submorphs reject: [:m | m isKindOf: WindowProxyMorph]! !
 
-!SpaceCard methodsFor: 'layout' stamp: ''!
+!SpaceCard methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 fullExtentIn: aDock
 	"My full (uncollapsed) extent as a dock item: the screen-aspect card extent."
 	^ aDock cardFullExtent! !
 
-!SpaceCard methodsFor: 'layout' stamp: ''!
+!SpaceCard methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 refitIn: aDock
 	"Re-request my width for the dock current axis (I enforce the screen aspect from it, see
 	morphExtent:) and re-lay-out the mini-map content for the new geometry."
 	self morphExtent: aDock cardWidth @ 0.
 	self relayoutMiniMap! !
 
-!SpaceCard methodsFor: 'layout' stamp: ''!
+!SpaceCard methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 relayoutMiniMap
 	"Re-place this card minimap content for the CURRENT card geometry (after Dock>>refit resizes the
 	cards on an edge/orientation change). Active card: re-sync the live proxies to the new miniMapScale.
@@ -5541,7 +5548,7 @@ relayoutMiniMap
 					pl home ifNotNil: [:h |
 						self placeMember: w centeredAt: h key * mini scale: h value * mini]]]]! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 buildDragChart
 	"The drag gesture as a flat StateMachine -- the single source of control-state truth (no correlated booleans).
 	idle: a press arms. armed: crossing the threshold lifts (active source -> #lifting pickup) or carries (stowed ->
@@ -5558,7 +5565,7 @@ buildDragChart
 	chart onTransition: [:c | (c is: #idle) ifTrue: [self clearDragState]].
 	^ chart! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 captureHomeFor: aWindow
 	"Record aWindow's desktop home (world visual centre -> scale) into its Placement. NORMALLY the live `location`
 	IS that home -- but while the StageOverview is tiling the window it has BORROWED `location` for the grid (the
@@ -5572,7 +5579,7 @@ captureHomeFor: aWindow
 	(Stage default placementOf: aWindow) ifNotNil: [:pl |
 		pl home: (centre -> loc scale)]! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 carryRectFor: aWindow extent: ext
 	"A free-standing carry-rect placeholder (a WindowProxyMorph in the window's colour, the same rect the active
 	card shows) of the given on-screen extent, at the world front so it rides above the dock unclipped. Used at the
@@ -5589,21 +5596,21 @@ carryRectFor: aWindow extent: ext
 	self world addMorphFront: g.
 	^ g! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 clearDragState
 	"Teardown on returning to #idle (the chart's entry action): delete the carry-rect placeholder if one is still
 	up, and drop every transient drag property, so no gesture leaves state behind."
 	(self valueOfProperty: #carryRect) ifNotNil: [:r | r delete].
 	#(dragWindow dragStart dragOffset dragCarryScale dragRotation carryRect dragDest) do: [:k | self removeProperty: k]! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 dragChart
 	"The drag gesture's StateMachine (see buildDragChart), built lazily and held per card; it ends each gesture
 	back in #idle, so the one instance is reused across drags."
 	^ (self valueOfProperty: #dragChart) ifNil: [
 		| c | c := self buildDragChart. self setProperty: #dragChart toValue: c. c]! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 dropDestAt: aWorldPoint
 	"The drop destination for the carried window: the dock card under aWorldPoint when it is a DIFFERENT space than
 	the window's current one, else this card (a return-home)."
@@ -5612,7 +5619,7 @@ dropDestAt: aWorldPoint
 	curSpace := (Stage default placementOf: (self valueOfProperty: #dragWindow)) ifNotNil: [:p | p space].
 	^ (target notNil and: [target space ~~ curSpace]) ifTrue: [target] ifFalse: [self]! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 flySettle: aWindow onto: aCard
 	"Drop onto the active space. OVERVIEW OPEN: hand the window to the overview to arc into its grid slot in sync
 	(joinFromMove:; the overview preserves rotation itself). OVERVIEW CLOSED: the carried mini-window SPLITS -- the
@@ -5666,7 +5673,7 @@ flySettle: aWindow onto: aCard
 			stage flightEnded: aWindow.
 			aCard redrawNeeded]! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 flySettleStowed: aWindow onto: aCard
 	"Drop onto a NON-active (stowed) space. If the overview is up, `leaveWindow:` reflows the survivors in sync with
 	this glide. The window glides from the drop point into aCard's mini-map slot, shrinking and KEEPING its angle r,
@@ -5707,7 +5714,7 @@ flySettleStowed: aWindow onto: aCard
 			stage flightEnded: aWindow.
 			aCard redrawNeeded]! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 liftForCarry: aWindow
 	"The mechanical lift, run when the chart enters #lifting or #carrying. Flight-mark aWindow, capture its centre
 	offset, a carry scale matched to its rep, AND its real rotation (from the overview's stashed location if the
@@ -5739,7 +5746,7 @@ liftForCarry: aWindow
 			self pickUp: aWindow fromCenter: fromCenter fromScale: fromScale toScale: cs offset: off]
 		ifFalse: [UISupervisor ui addMorphFront: aWindow]! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 pickUp: aWindow fromCenter: fromCenter fromScale: fromScale toScale: toScale offset: off
 	"The active-source grab tween: the full-size desktop window flies, shrinking, onto the LIVE cursor (read from the
 	hand each frame), ARCING perpendicular to the dock edge, keeping its captured angle (#dragRotation), into the
@@ -5767,7 +5774,7 @@ pickUp: aWindow fromCenter: fromCenter fromScale: fromScale toScale: toScale off
 				ifTrue: [self dragChart fire: #land]
 				ifFalse: [self settle: w into: dest. self dragChart fire: #drop]]! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 proxyAt: aLocalPoint
 	"The real window whose representation in me covers aLocalPoint (card-local, the mouse-down localPosition):
 	a live mini-map proxy on the active card (answer its window) or a stowed shrunk window on a stowed card
@@ -5780,7 +5787,7 @@ proxyAt: aLocalPoint
 		ifFalse: [
 			^ self stowedWindows detect: [:w | w findFullBoundsInOwner containsPoint: aLocalPoint] ifNone: [nil]]! !
 
-!SpaceCard methodsFor: 'drag-drop' stamp: ''!
+!SpaceCard methodsFor: 'drag-drop' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 settle: aWindow into: targetCard
 	"Land a carried window (Option B drop), animated either way for symmetry. Active target -> the window flies out
 	to its full-size desktop home while its rect drifts into the mini-map slot (flySettle:onto:). Stowed target ->
@@ -5790,17 +5797,17 @@ settle: aWindow into: targetCard
 		ifTrue: [^ self flySettle: aWindow onto: targetCard]
 		ifFalse: [^ self flySettleStowed: aWindow onto: targetCard]! !
 
-!StageOverview methodsFor: 'testing' stamp: ''!
+!StageOverview methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isIncludedInTaskbar
 	^ false! !
 
-!StageOverview methodsFor: 'testing' stamp: ''!
+!StageOverview methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isSettled
 	"The overview is up and at rest: the Stage sits in overview/visible. The Stage's mode chart is the
 	ONLY overview state -- this morph is a view driving it (see Stage>>modeChart)."
 	^ Stage default mode is: #visible! !
 
-!StageOverview methodsFor: 'initialization' stamp: ''!
+!StageOverview methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initialize
 	super initialize.
 	windows := OrderedCollection new.
@@ -5811,7 +5818,7 @@ initialize
 	self color: Color transparent.
 	self morphExtent: 0 @ 0! !
 
-!StageOverview methodsFor: 'animation' stamp: ''!
+!StageOverview methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 animateThen: doneBlock
 	"Run the shared-timeline tween for all windows on the Animator: each frame the eased t fans
 	out to every window via apply:at:. doneBlock finishes the mode transition. Registered on self,
@@ -5823,7 +5830,7 @@ animateThen: doneBlock
 		easing: #cubicInOut
 		onDone: doneBlock! !
 
-!StageOverview methodsFor: 'animation' stamp: ''!
+!StageOverview methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 animateToFreshLayoutArcing: arcWindow vertical: dockVertical
 	"Lay the CURRENT `windows` set out fresh and tween everyone there on the shared timeline. Reset each to
 	its home (so the natural layout measures full-size bounds), recompute the grid, then cache each window's
@@ -5854,7 +5861,7 @@ animateToFreshLayoutArcing: arcWindow vertical: dockVertical
 	world taskbar ifNotNil: [:tb | tb comeToFront].
 	self animateThen: [Stage default mode fire: #opened]! !
 
-!StageOverview methodsFor: 'animation' stamp: ''!
+!StageOverview methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 apply: aMorph at: t
 	"One frame: lerp scale (slots 1..2), trace position along the quadratic Bezier (slots 3..5), lerp ROTATION
 	(slots 7..8). For a plain reflow/enter/exit from==to, so the rotation just holds constant -- a rotated window
@@ -5871,12 +5878,12 @@ apply: aMorph at: t
 	loc withTranslation: p.
 	aMorph location: loc! !
 
-!StageOverview methodsFor: 'animation' stamp: ''!
+!StageOverview methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 cacheLerpFor: aMorph from: fromLoc to: toLoc
 	"Straight-line tween (control point defaults to the midpoint). See the corner: variant."
 	self cacheLerpFor: aMorph from: fromLoc to: toLoc corner: nil! !
 
-!StageOverview methodsFor: 'animation' stamp: ''!
+!StageOverview methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 cacheLerpFor: aMorph from: fromLoc to: toLoc corner: cornerP
 	"Precompute the per-frame tween: scale (start+delta), position (quadratic Bezier p0->p1 bending through cornerP;
 	nil cornerP => midpoint => straight lerp), and ROTATION (start+delta, in radians). The layout never changes a
@@ -5898,7 +5905,7 @@ cacheLerpFor: aMorph from: fromLoc to: toLoc corner: cornerP
 	aMorph setProperty: #exposeAnimLerp toValue:
 		{fromS. toS - fromS. fromP. toP. corner. loc. fromR. toR - fromR}! !
 
-!StageOverview methodsFor: 'animation' stamp: ''!
+!StageOverview methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 captureTargets: morphs in: area
 	"AffineTransformation is mutable, so we deep-copy at every snapshot.
 	Also populates the per-morph lerp cache used by step/apply:at:."
@@ -5914,12 +5921,12 @@ captureTargets: morphs in: area
 		w location: origLoc copy.
 		self cacheLerpFor: w from: (fromMap at: w) to: (toMap at: w)]! !
 
-!StageOverview methodsFor: 'animation' stamp: ''!
+!StageOverview methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 joinWindow: newcomer home: homeLoc
 	"Straight-in join (no dock arc). See the dockVertical: variant."
 	self joinWindow: newcomer home: homeLoc dockVertical: nil! !
 
-!StageOverview methodsFor: 'animation' stamp: ''!
+!StageOverview methodsFor: 'animation' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 joinWindow: newcomer home: homeLoc dockVertical: vOrNil
 	"Fold newcomer into the settled overview: add it to the window set (its home is homeLoc, where it
 	returns on exit) and reflow everyone to a fresh natural layout. newcomer arcs in from the dock edge
@@ -5935,7 +5942,7 @@ joinWindow: newcomer home: homeLoc dockVertical: vOrNil
 	windows := (world submorphs select: [:m | knownSet includes: m]) asArray.
 	self animateToFreshLayoutArcing: newcomer vertical: vOrNil! !
 
-!StageOverview methodsFor: 'layout' stamp: ''!
+!StageOverview methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 naturalLayoutFor: morphs in: area spacing: spacing accuracy: accuracy
 	"Port of KWin ExpoLayout::calculateWindowTransformationsNatural.
 	Returns a Dictionary mapping each morph to a target Rectangle inside `area`."
@@ -5981,7 +5988,7 @@ naturalLayoutFor: morphs in: area spacing: spacing accuracy: accuracy
 			extent: r extent * fitScale)].
 	^ targets! !
 
-!StageOverview methodsFor: 'public' stamp: 'ML 3/Jul/2026 14:41:24'!
+!StageOverview methodsFor: 'public' stamp: 'ML 3/Jul/2026, 12:41:24 pm (UTC)'!
 connectStage
 	"Listen to the Stage for window membership: #managed -> join the grid, #forgotten ->
 	leave it, #moved -> join or leave depending on whether the window landed on the shown
@@ -5995,7 +6002,7 @@ connectStage
 		evt == #moved ifTrue: [self isSettled ifTrue: [self windowMoved: arg]]]
 		for: #overview! !
 
-!StageOverview methodsFor: 'public' stamp: ''!
+!StageOverview methodsFor: 'public' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 enter
 	"Tile every managed desktop window into a grid in the arena (which already excludes the dock).
 	Drives the Stage's mode chart: entering is only possible from live/settled (the chart's missing edges
@@ -6020,7 +6027,7 @@ enter
 	world taskbar ifNotNil: [:tb | tb comeToFront].
 	self animateThen: [Stage default mode fire: #opened]! !
 
-!StageOverview methodsFor: 'public' stamp: ''!
+!StageOverview methodsFor: 'public' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 exit
 	"Animate every window back to its original location, then close: #dismiss fires now, #closed when the
 	tween lands -- and re-entering live/settled drains any space switch queued while the overview was up.
@@ -6041,13 +6048,13 @@ exit
 		self morphExtent: 0 @ 0.
 		Stage default mode fire: #closed]! !
 
-!StageOverview methodsFor: 'public' stamp: ''!
+!StageOverview methodsFor: 'public' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 joinFromDock: newcomer home: homeLoc vertical: aBool
 	"A window restored from the dock while the overview is open joins the layout, arcing in from the
 	dock edge (orientation aBool), and returns to homeLoc (its real home) when the overview closes."
 	^ self joinWindow: newcomer home: homeLoc dockVertical: aBool! !
 
-!StageOverview methodsFor: 'public' stamp: ''!
+!StageOverview methodsFor: 'public' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 joinFromMove: aWindow
 	"A window dragged onto the shown space while the overview is up: reflow it INTO its grid slot, arcing from where
 	it was dropped, IN SYNC with the others -- the move analogue of a dock restore (joinFromDock:), so it never
@@ -6064,13 +6071,13 @@ joinFromMove: aWindow
 	windows := windows copyWithout: aWindow.
 	self joinFromDock: aWindow home: homeLoc vertical: ((Dock current notNil) and: [Dock current isVertical])! !
 
-!StageOverview methodsFor: 'public' stamp: ''!
+!StageOverview methodsFor: 'public' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 joinFromOpening: newcomer
 	"A window opened while the overview is open joins the layout; its home is where it opened."
 	(newcomer isManagedDesktopMorph) ifFalse: [^ self].
 	^ self joinWindow: newcomer home: newcomer location copy! !
 
-!StageOverview methodsFor: 'public' stamp: ''!
+!StageOverview methodsFor: 'public' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 leaveWindow: departing
 	"A managed window was closed/removed while the overview is settled: drop it from the layout and reflow
 	the survivors into the freed space (animated, on the shared timeline). No-op if it was not part of the
@@ -6083,19 +6090,19 @@ leaveWindow: departing
 	originMap removeKey: departing ifAbsent: [].
 	self animateToFreshLayoutArcing: nil vertical: nil! !
 
-!StageOverview methodsFor: 'public' stamp: ''!
+!StageOverview methodsFor: 'public' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 toggle
 	"Enter when the Stage can host an overview (live and settled -- so never mid-switch), leave when it
 	is up. Presses during the opening/closing tween fall through to nothing."
 	(Stage default mode can: #openOverview) ifTrue: [^ self enter].
 	self isSettled ifTrue: [^ self exit]! !
 
-!StageOverview methodsFor: 'top window' stamp: ''!
+!StageOverview methodsFor: 'top window' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 collapse
 	"StageOverview should never auto-collapse/hide — exit instead."
 	self exit! !
 
-!StageOverview methodsFor: 'drawing' stamp: ''!
+!StageOverview methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"Hover outline OUTSIDE the target, FOLLOWING its rotation. For a SystemWindow we draw the accent squircle in a
 	frame centred on the window, rotated by its angle, at WORLD scale (scale 1, NOT the tile scale) -- so the stroke
@@ -6131,24 +6138,24 @@ drawOn: aCanvas
 			aCanvas strokeWidth: off color: (Theme current accentColor alpha: 0.7) do: [
 				aCanvas squircleMinX: b left - off maxX: b right + off minY: b top - off maxY: b bottom + off radius: off]]! !
 
-!StageOverview methodsFor: 'drawing' stamp: ''!
+!StageOverview methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 requiresVectorCanvas
 	"Only need the vector canvas while settled, to stroke the hover outlines. During the opening/closing
 	tween drawOn: paints nothing, so forcing full-screen vector rendering then is pure waste -- it roughly
 	doubles the per-frame repaint cost."
 	^ self isSettled! !
 
-!StageOverview methodsFor: 'accessing' stamp: ''!
+!StageOverview methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 animDuration
 	"The shared-timeline tween length (ms) for enter/exit/join. Configurable; kept here on the class
 	that owns the overview animation rather than in a global, so each gesture-owner sets its own feel."
 	^ animDuration! !
 
-!StageOverview methodsFor: 'accessing' stamp: ''!
+!StageOverview methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 animDuration: ms
 	animDuration := ms! !
 
-!StageOverview methodsFor: 'accessing' stamp: ''!
+!StageOverview methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 homeLocationOf: aWindow
 	"The window's REAL location while the overview is tiling it: enter/captureTargets borrows the live `location`
 	for the grid layout and parks the true desktop location in originMap, so anything reading the live `location`
@@ -6156,7 +6163,7 @@ homeLocationOf: aWindow
 	this window (the caller then trusts the live location). originMap is empty whenever the overview is closed."
 	^ originMap at: aWindow ifAbsent: [nil]! !
 
-!StageOverview methodsFor: 'stage choreography' stamp: ''!
+!StageOverview methodsFor: 'stage choreography' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 windowMoved: aWindow
 	"A window changed space via a drag (Stage #moved) while the overview is up: if it LEFT the shown space, drop its
 	tile and reflow the survivors. JOINING the shown space is driven directly by flySettle:onto: (joinFromMove:) so
@@ -6165,16 +6172,16 @@ windowMoved: aWindow
 	(Stage default placementOf: aWindow) ifNotNil: [:p |
 		p space == Stage default shown ifFalse: [self leaveWindow: aWindow]]! !
 
-!StageOverview methodsFor: 'events' stamp: ''!
+!StageOverview methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseDown: anEvent
 	"Only intercept clicks while the layout is settled -- leave mid-animation clicks alone."
 	^ self isSettled! !
 
-!StageOverview methodsFor: 'events' stamp: ''!
+!StageOverview methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseOver: anEvent
 	^ true! !
 
-!StageOverview methodsFor: 'events' stamp: ''!
+!StageOverview methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseButton1Down: anEvent localPosition: aPoint
 	"Hit-test the click against tiled windows. Hit: focus + exit. Miss: just exit. Ignore during animation."
 	| hit worldPos |
@@ -6184,7 +6191,7 @@ mouseButton1Down: anEvent localPosition: aPoint
 	hit ifNotNil: [hit showAndComeToFront].
 	self exit! !
 
-!StageOverview methodsFor: 'events' stamp: ''!
+!StageOverview methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseLeave: anEvent
 	"Clear hover when cursor leaves the overview entirely."
 	| current |
@@ -6194,7 +6201,7 @@ mouseLeave: anEvent
 	self setProperty: #hoveredWindow toValue: nil.
 	self invalidateLocalRect: ((current findFullBoundsInOwner expandBy: 8 * self hostScale) encompassingIntegerRectangle)! !
 
-!StageOverview methodsFor: 'events' stamp: ''!
+!StageOverview methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseMove: anEvent localPosition: aPoint
 	"While settled, track which tile the cursor is over. Refresh only the specific outline regions."
 	| hit current oldR newR margin |
@@ -6209,34 +6216,34 @@ mouseMove: anEvent localPosition: aPoint
 	oldR ifNotNil: [self invalidateLocalRect: oldR].
 	newR ifNotNil: [self invalidateLocalRect: newR]! !
 
-!StageOverview class methodsFor: 'accessing' stamp: ''!
+!StageOverview class methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 default
 	^ Default ifNil: [Default := self new]! !
 
-!WindowProxyMorph methodsFor: 'accessing' stamp: ''!
+!WindowProxyMorph methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 window
 	"The desktop window this proxy mirrors (used to match/sync/drop it)."
 	^ window! !
 
-!WindowProxyMorph methodsFor: 'accessing' stamp: ''!
+!WindowProxyMorph methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 window: aMorph
 	window := aMorph! !
 
-!WindowProxyMorph methodsFor: 'testing' stamp: ''!
+!WindowProxyMorph methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isIncludedInTaskbar
 	"Chrome -- a mini-map proxy, never a managed desktop window."
 	^ false! !
 
-!WindowProxyMorph methodsFor: 'testing' stamp: ''!
+!WindowProxyMorph methodsFor: 'testing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!WindowProxyMorph methodsFor: 'events' stamp: ''!
+!WindowProxyMorph methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseDown: anEvent
 	"Let clicks pass through to the card (which toggles overview / switches groups)."
 	^ false! !
 
-!WindowProxyMorph methodsFor: 'drawing' stamp: ''!
+!WindowProxyMorph methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"A window mini-rep: a squircle of the morph extent filled in its window colour with a thin black
 	outline. Drawn axis-aligned in local coordinates; the morphic engine applies this morph rotation
@@ -6249,14 +6256,14 @@ drawOn: aCanvas
 	aCanvas fillColor: (color ifNil: [Color gray]) do: [aCanvas squircle: bounds radius: r].
 	aCanvas strokeWidth: 0.5 * s color: Color black do: [aCanvas squircle: bounds radius: r]! !
 
-!StateMachineMorph methodsFor: 'initialization' stamp: ''!
+!StateMachineMorph methodsFor: 'initialization' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize
 	"A light panel; the chart lays itself out as a ring of states once one is set."
 	super initialize.
 	self color: (Color gray: 0.97).
 	self morphExtent: (280 @ 280) * DisplayScreen hostOSScaleFactor! !
 
-!StateMachineMorph methodsFor: 'accessing' stamp: ''!
+!StateMachineMorph methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 chart: aChart
 	"Render aChart, laying it out eagerly so the extent is set BEFORE any draw. Subscribe to follow transitions
 	live -- BUT guard on being in the world, so a deleted morph's lingering observer is a silent no-op (no draw
@@ -6266,7 +6273,7 @@ chart: aChart
 	self layout.
 	self redrawNeeded! !
 
-!StateMachineMorph methodsFor: 'drawing' stamp: ''!
+!StateMachineMorph methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawBackward: ev from: bf to: bt floor: fy on: aCanvas
 	"A backward edge routed UNDER the row at floor fy: down from the source bottom,
 	along, up into the target bottom, label on the floor segment."
@@ -6277,7 +6284,7 @@ drawBackward: ev from: bf to: bt floor: fy on: aCanvas
 	self drawEdge: {start. start x @ fy. end x @ fy. end}
 		label: ev labelAt: ((start x + end x) / 2) @ (fy + (12 * s)) on: aCanvas! !
 
-!StateMachineMorph methodsFor: 'drawing' stamp: ''!
+!StateMachineMorph methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawCeiling: ev from: bf to: bt ceil: cy on: aCanvas
 	"A skip edge routed OVER the top at ceiling cy: up from the source top, across,
 	down into the target top."
@@ -6288,7 +6295,7 @@ drawCeiling: ev from: bf to: bt ceil: cy on: aCanvas
 	self drawEdge: {start. start x @ cy. end x @ cy. end}
 		label: ev labelAt: ((start x + end x) / 2) @ (cy - (5 * s)) on: aCanvas! !
 
-!StateMachineMorph methodsFor: 'drawing' stamp: ''!
+!StateMachineMorph methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawEdge: pts label: ev labelAt: labelPt on: aCanvas
 	"One ink pass for the WHOLE edge: the polyline shaft and the arrowhead V as
 	subpaths of a single stroked path, so overlaps -- joints, and the barbs meeting
@@ -6309,7 +6316,7 @@ drawEdge: pts label: ev labelAt: labelPt on: aCanvas
 	aCanvas drawString: ev asString atCenterXBaselineY: labelPt
 		font: self labelFont color: (Theme current text alpha: 0.9)! !
 
-!StateMachineMorph methodsFor: 'drawing' stamp: ''!
+!StateMachineMorph methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawForward: ev from: bf to: bt on: aCanvas
 	"A forward edge: exit the source's right side, enter the target's left side,
 	orthogonal jog if the rows differ, event label above the mid."
@@ -6322,7 +6329,7 @@ drawForward: ev from: bf to: bt on: aCanvas
 		ifFalse: [ | mx | mx := ((start x + end x) / 2) max: (start x + (18 * s)). {start. mx @ start y. mx @ end y. end}].
 	self drawEdge: pts label: ev labelAt: ((start + end) / 2) - (0 @ (11 * s)) on: aCanvas! !
 
-!StateMachineMorph methodsFor: 'drawing' stamp: ''!
+!StateMachineMorph methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawOn: aCanvas
 	"A light panel (inset so its stroke stays inside the morph bounds), then the nested Harel chart: compound
 	states are containers holding their children; the ACTIVE PATH is lit. Transitions drawn last, over the boxes."
@@ -6339,7 +6346,7 @@ drawOn: aCanvas
 	self rootStatesOrdered do: [:root | self drawState: root on: aCanvas].
 	self drawTransitionsOn: aCanvas! !
 
-!StateMachineMorph methodsFor: 'drawing' stamp: ''!
+!StateMachineMorph methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawState: st on: aCanvas
 	"A squircle frame; accent when active (fill for a live leaf, faint wash for a live compound). A compound titles
 	itself top-left and recurses into its children."
@@ -6371,7 +6378,7 @@ drawState: st on: aCanvas
 				font: self labelFont
 				color: (active ifTrue: [Color white] ifFalse: [Theme current text])]! !
 
-!StateMachineMorph methodsFor: 'drawing' stamp: ''!
+!StateMachineMorph methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawTransitionsOn: aCanvas
 	"Adjacent forward edges go straight between columns; skip-forward edges route over the top; backward edges route
 	under the row. Ceilings and floors are each staggered so parallel edges never overlap."
@@ -6394,39 +6401,39 @@ drawTransitionsOn: aCanvas
 	ceils keysAndValuesDo: [:i :c | self drawCeiling: (c at: 1) from: (c at: 2) to: (c at: 3) ceil: (rowTop - (i * 22 * s)) on: aCanvas].
 	backs keysAndValuesDo: [:i :b | self drawBackward: (b at: 1) from: (b at: 2) to: (b at: 3) floor: (floorY + (i * 24 * s)) on: aCanvas]! !
 
-!StateMachineMorph methodsFor: 'drawing' stamp: ''!
+!StateMachineMorph methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!StateMachineMorph methodsFor: 'metrics' stamp: ''!
+!StateMachineMorph methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 fontHeight
 	^ self labelFont ascent + self labelFont descent! !
 
-!StateMachineMorph methodsFor: 'metrics' stamp: ''!
+!StateMachineMorph methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 gap
 	^ 20 * self hostScale! !
 
-!StateMachineMorph methodsFor: 'metrics' stamp: ''!
+!StateMachineMorph methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 labelFont
 	^ FontFamily defaultFamilyAndPointSize! !
 
-!StateMachineMorph methodsFor: 'metrics' stamp: ''!
+!StateMachineMorph methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 margin
 	^ 22 * self hostScale! !
 
-!StateMachineMorph methodsFor: 'metrics' stamp: ''!
+!StateMachineMorph methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 pad
 	^ 9 * self hostScale! !
 
-!StateMachineMorph methodsFor: 'metrics' stamp: ''!
+!StateMachineMorph methodsFor: 'metrics' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 titleH
 	^ self fontHeight + (10 * self hostScale)! !
 
-!StateMachineMorph methodsFor: 'layout' stamp: ''!
+!StateMachineMorph methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 childrenOf: aState
 	^ chart states select: [:s | (chart parentOf: s) == aState]! !
 
-!StateMachineMorph methodsFor: 'layout' stamp: ''!
+!StateMachineMorph methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 edgeCrosses: bf to: bt
 	"True if a straight forward edge bf->bt would pass horizontally through another box on the row band -- then it
 	must be routed over the top (a skip edge)."
@@ -6435,11 +6442,11 @@ edgeCrosses: bf to: bt
 			(b left >= (bf right - 3)) and: [(b right <= (bt left + 3)) and: [
 				(b top < bf bottom) and: [b bottom > bf top]]]]]]! !
 
-!StateMachineMorph methodsFor: 'layout' stamp: ''!
+!StateMachineMorph methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 isCompound: aState
 	^ (self childrenOf: aState) notEmpty! !
 
-!StateMachineMorph methodsFor: 'layout' stamp: ''!
+!StateMachineMorph methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 layout
 	"Pack the tree, then fit the morph with room ABOVE for skip edges (routed over the top) and BELOW for backward
 	edges (routed under the row) -- XState/ELK style."
@@ -6463,7 +6470,7 @@ layout
 	topRoom > 0 ifTrue: [positions keysAndValuesDo: [:k :b | positions at: k put: ((b origin + sh) corner: (b corner + sh))]].
 	self morphExtent: (maxR max: 140) @ (topRoom + rowBottom + ((nBack * 24 + 46) * self hostScale))! !
 
-!StateMachineMorph methodsFor: 'layout' stamp: ''!
+!StateMachineMorph methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 layoutState: st at: tl
 	"Assign st (and, if compound, its subtree) a box; answer it. Leaf = label + padding; compound = children
 	packed left-to-right below a title band, wrapped with padding."
@@ -6482,11 +6489,11 @@ layoutState: st at: tl
 	positions at: st put: box.
 	^ box! !
 
-!StateMachineMorph methodsFor: 'layout' stamp: ''!
+!StateMachineMorph methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 leafExtentOf: st
 	^ ((self labelFont widthOfString: st asString) + (2 * self pad)) @ (self fontHeight + (2 * self pad))! !
 
-!StateMachineMorph methodsFor: 'layout' stamp: ''!
+!StateMachineMorph methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 orderedChildrenOf: aState
 	"Children ordered by Sugiyama-style RANK: BFS depth from the compound's initial child, following transitions
 	among these children -- so the flow reads left-to-right and adjacent (ELK layer assignment). Unreachable
@@ -6510,7 +6517,7 @@ orderedChildrenOf: aState
 		ra := rank at: a ifAbsent: [9999]. rb := rank at: b ifAbsent: [9999].
 		ra = rb ifTrue: [a asString < b asString] ifFalse: [ra < rb]]) asArray! !
 
-!StateMachineMorph methodsFor: 'layout' stamp: ''!
+!StateMachineMorph methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 rootStatesOrdered
 	"Top-level states (no parent), the initial one's root first."
 	| roots initRoot |
@@ -6521,11 +6528,11 @@ rootStatesOrdered
 		ifTrue: [(Array with: initRoot) , ((roots reject: [:r | r == initRoot]) asSortedCollection: [:a :b | a asString < b asString]) asArray]
 		ifFalse: [(roots asSortedCollection: [:a :b | a asString < b asString]) asArray]! !
 
-!StateMachineMorph class methodsFor: 'instance creation' stamp: ''!
+!StateMachineMorph class methodsFor: 'instance creation' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 on: aChart
 	^ self new chart: aChart! !
 
-!StateMachineMorph class methodsFor: 'examples' stamp: ''!
+!StateMachineMorph class methodsFor: 'examples' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 exampleTurnstile
 	"A live turnstile chart to play with: coin unlocks, push re-locks.
 	   StateMachineMorph exampleTurnstile
@@ -6539,7 +6546,7 @@ exampleTurnstile
 	morph openInWorld.
 	^ machine! !
 
-!StateMachineMorph class methodsFor: 'examples' stamp: ''!
+!StateMachineMorph class methodsFor: 'examples' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 worldMenuOptions
 	"Place 'State Machine Demo' in the Open section of the World menu."
 	^ `{{
@@ -6553,7 +6560,7 @@ worldMenuOptions
 			#balloonText 	-> 		'A live Harel state chart: fire events, watch it move'.
 		} asDictionary}`! !
 
-!MorphHaloHandle methodsFor: 'drawing' stamp: ''!
+!MorphHaloHandle methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"A small white square with an accent border, centred in our (larger) hit
 	bounds. Rotate zones are invisible -- they are pure hit areas just outside the
@@ -6568,37 +6575,37 @@ drawOn: aCanvas
 	aCanvas strokeWidth: 1 * s color: Theme current accentColor do: [
 		aCanvas squircle: (box insetBy: 0.5 * s) radius: 1 * s]! !
 
-!MorphHaloHandle methodsFor: 'drawing' stamp: ''!
+!MorphHaloHandle methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!MorphHaloHandle methodsFor: 'events' stamp: ''!
+!MorphHaloHandle methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 handlesMouseOver: evt
 	"Receive mouseEnter:/mouseLeave: so we can show a resize cursor on hover."
 	^ true
 ! !
 
-!MorphHaloHandle methodsFor: 'events' stamp: ''!
+!MorphHaloHandle methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseEnter: evt
 	"Rotate zones show the rotate cursor; resize grips show the edge-resize cursor."
 	(self valueOfProperty: #role) == #rotate
 		ifTrue: [Cursor currentCursor: MorphHalo rotateCursor]
 		ifFalse: [Cursor currentCursor: (Cursor resizeForEdge: (self valueOfProperty: #grip))]! !
 
-!MorphHaloHandle methodsFor: 'events' stamp: ''!
+!MorphHaloHandle methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseLeave: evt
 	"Restore the normal cursor when the pointer leaves the grip."
 	Cursor currentCursor: Cursor normalCursor
 ! !
 
-!SearchField methodsFor: 'events' stamp: ''!
+!SearchField methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 changedAction: aBlock
 	"Set a 1-arg block to fire after every keystroke. Argument is the new
 	full contents (a String)."
 	changedAction := aBlock
 ! !
 
-!SearchField methodsFor: 'events' stamp: ''!
+!SearchField methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 keyStroke: aKeyboardEvent
 	"Fire the change action after every keystroke (post-edit)."
 	super keyStroke: aKeyboardEvent.
@@ -6606,14 +6613,14 @@ keyStroke: aKeyboardEvent
 		changedAction valueWithPossibleArgument: self contents]
 ! !
 
-!SearchField methodsFor: 'accessing' stamp: 'ML 3/Jul/2026 15:39:41'!
+!SearchField methodsFor: 'accessing' stamp: 'ML 3/Jul/2026, 1:39:41 pm (UTC)'!
 placeholder: aString
 	"Hint text shown when the field is empty. Drawn in a dim theme ink (see drawOn:)."
 	placeholder := aString.
 	self redrawNeeded
 ! !
 
-!SearchField methodsFor: 'drawing' stamp: 'ML 3/Jul/2026 15:39:41'!
+!SearchField methodsFor: 'drawing' stamp: 'ML 3/Jul/2026, 1:39:41 pm (UTC)'!
 drawOn: aCanvas
 	"Same as EntryFieldMorph>>drawOn:, plus draw placeholder text when empty
 	(regardless of focus — matches macOS/web convention)."
@@ -6646,7 +6653,7 @@ drawOn: aCanvas
 				color: color]
 ! !
 
-!SearchField methodsFor: 'focus' stamp: ''!
+!SearchField methodsFor: 'focus' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 keyboardFocusChange: aBoolean
 	"Focus gained or lost. Both mouse-click focus (via HandMorph>>newKeyboardFocus:)
 	and tab navigation route through here, so it is the single place to react to a
@@ -6655,14 +6662,14 @@ keyboardFocusChange: aBoolean
 	super keyboardFocusChange: aBoolean.
 	self owner ifNotNil: [:o | o redrawNeeded]! !
 
-!SearchField methodsFor: 'layout' stamp: ''!
+!SearchField methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 minimumExtent
 	"Inner field height pinned to 24 logical px (scaled to physical).
 	EntryFieldMorph's default minimum (3@1 * textBox y) would grow us to font
 	lineSpacing + descent, which makes the search bar feel tall. Keep super's x."
 	^ super minimumExtent x @ (24 * self hostScale)! !
 
-!SearchField methodsFor: 'layout' stamp: ''!
+!SearchField methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 textOffset
 	"Position text exactly like a LabelMorph: origin at the interior (border)
 	corner with NO extra descent padding, so the field's baseline (origin +
@@ -6671,7 +6678,7 @@ textOffset
 	the text below where a label sits and forced the search bar to compensate."
 	^ (2 * self borderWidth) asPoint! !
 
-!SymbolMorph methodsFor: 'accessing' stamp: ''!
+!SymbolMorph methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 initialize
 	"Symbol rendered as a LabelMorph: the glyph is our contents, the SymbolFont
 	at the chosen point size is our font. LabelMorph draws it on the baseline and
@@ -6683,23 +6690,23 @@ initialize
 	self font: (SymbolFont fontDescriptionPointSize: 16).
 	self updateGlyph! !
 
-!SymbolMorph methodsFor: 'accessing' stamp: ''!
+!SymbolMorph methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 pointSize
 	"The point size of the symbol font we render with."
 	^ self fontToUse pointSize! !
 
-!SymbolMorph methodsFor: 'accessing' stamp: ''!
+!SymbolMorph methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 pointSize: anInteger
 	"Render the symbol at anInteger points: set our font to the SymbolFont at
 	that size. LabelMorph auto-sizes the morph to the glyph box."
 	self font: (SymbolFont fontDescriptionPointSize: anInteger)! !
 
-!SymbolMorph methodsFor: 'accessing' stamp: ''!
+!SymbolMorph methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 symbolName
 	"Which icon this morph shows: a SymbolFont name like #home or #search."
 	^ symbolName! !
 
-!SymbolMorph methodsFor: 'accessing' stamp: ''!
+!SymbolMorph methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 symbolName: aName
 	"Display the symbol named aName. Signal if no such symbol is registered."
 	(SymbolFont includesName: aName) ifFalse: [
@@ -6707,7 +6714,7 @@ symbolName: aName
 	symbolName := aName asSymbol.
 	self updateGlyph! !
 
-!SymbolMorph methodsFor: 'accessing' stamp: ''!
+!SymbolMorph methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 updateGlyph
 	"Set our contents to the single glyph character for symbolName (empty string
 	if the symbol is unknown). Goes through super contents: so LabelMorph
@@ -6718,12 +6725,12 @@ updateGlyph
 		ifTrue: ['']
 		ifFalse: [UnicodeString empty copyWith: ch])! !
 
-!SymbolMorph methodsFor: 'drawing' stamp: ''!
+!SymbolMorph methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 requiresVectorCanvas
 	^ true
 ! !
 
-!SymbolMorph methodsFor: 'geometry' stamp: ''!
+!SymbolMorph methodsFor: 'geometry' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 opticalBounds
 	"Ink bounds of the glyph. A SymbolMorph's ink depends only on (symbolName,
 	pointSize, extent), and menus create MANY identical glyphs (every chevron, every
@@ -6734,12 +6741,12 @@ opticalBounds
 	OpticalCache isNil ifTrue: [OpticalCache := Dictionary new].
 	^ OpticalCache at: key ifAbsentPut: [super opticalBounds]! !
 
-!SymbolButton methodsFor: 'accessing' stamp: ''!
+!SymbolButton methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 clickAction: aBlock
 	"Block to fire on left-click. Zero-arg."
 	clickAction := aBlock! !
 
-!SymbolButton methodsFor: 'accessing' stamp: ''!
+!SymbolButton methodsFor: 'accessing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 idleColor: aColor
 	"Set the resting color. Use this (not color:) for state changes on hoverable
 	buttons: if a hover brighten is in flight, mouseLeave: restores to the stash --
@@ -6747,7 +6754,7 @@ idleColor: aColor
 	self setProperty: #idleColor toValue: aColor.
 	self color: aColor! !
 
-!SymbolButton methodsFor: 'drawing' stamp: ''!
+!SymbolButton methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawOn: aCanvas
 	"If a #discColor property is set, render as a filled disc with the symbol
 	glyph centered on top at #glyphScale of our point size — the search-field
@@ -6772,20 +6779,20 @@ drawOn: aCanvas
 		font: glyphFont
 		color: self color! !
 
-!SymbolButton methodsFor: 'events' stamp: ''!
+!SymbolButton methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesMouseDown: anEvent
 	^ true
 ! !
 
-!SymbolButton methodsFor: 'events' stamp: ''!
+!SymbolButton methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 handlesMouseOver: anEvent
 	^ true! !
 
-!SymbolButton methodsFor: 'events' stamp: ''!
+!SymbolButton methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseButton1Down: anEvent localPosition: aPoint
 	clickAction ifNotNil: [clickAction value]! !
 
-!SymbolButton methodsFor: 'events' stamp: ''!
+!SymbolButton methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseEnter: anEvent
 	"Brighten while hovered: raise the alpha over the resting color (stashed for
 	mouseLeave:). Opaque colors (e.g. the pinned accent) stay as they are."
@@ -6796,13 +6803,13 @@ mouseEnter: anEvent
 	self color: (c alpha: ((c alpha + 0.45) min: 1)).
 	self redrawNeeded! !
 
-!SymbolButton methodsFor: 'events' stamp: ''!
+!SymbolButton methodsFor: 'events' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 mouseLeave: anEvent
 	(self valueOfProperty: #idleColor) ifNotNil: [:c |
 		self color: c.
 		self redrawNeeded]! !
 
-!CommandResultMorph methodsFor: 'initialization' stamp: 'ML 5/Jul/2026 11:20:37'!
+!CommandResultMorph methodsFor: 'initialization' stamp: 'ML 5/Jul/2026, 9:20:37 am (UTC)'!
 initialize
 	"A flat command-palette result row: a MenuItemMorph with no content submorphs -- the dim
 	breadcrumb + leaf name (and, in step 4, the matched-char highlight) are drawn directly in
@@ -6814,7 +6821,7 @@ initialize
 	leafLabel := String new.
 	matchedIndices := #()! !
 
-!CommandResultMorph methodsFor: 'building' stamp: 'ML 5/Jul/2026 12:41:28'!
+!CommandResultMorph methodsFor: 'building' stamp: 'ML 5/Jul/2026, 10:41:28 am (UTC)'!
 fromCommand: entry matched: indices
 	"Configure this row from a { pathLabels. leafLabel. sourceItem } index entry. Copy the
 	source item's target/selector/arguments so the inherited invokeWithEvent: fires the
@@ -6834,7 +6841,7 @@ fromCommand: entry matched: indices
 	matchedIndices := indices.
 	self redrawNeeded! !
 
-!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 11:20:37'!
+!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026, 9:20:37 am (UTC)'!
 breadcrumbText
 	"The dim breadcrumb prefix drawn before the leaf name: the ancestor submenu labels joined
 	by a right-angle separator, with a trailing separator before the leaf. Empty for a
@@ -6847,13 +6854,13 @@ breadcrumbText
 	ws space; nextPut: sep; space.
 	^ ws contents! !
 
-!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 13:24:16'!
+!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026, 11:24:16 am (UTC)'!
 commandGlyph
 	"The command-key mark from the SymbolFont (Tabler #command), as a UnicodeString -- these
 	glyphs live in the private-use area, beyond Latin-1, so a plain String cannot hold them."
 	^ UnicodeString empty copyWith: (SymbolFont at: #command)! !
 
-!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 13:24:16'!
+!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026, 11:24:16 am (UTC)'!
 drawOn: aCanvas
 	"Selection pill (inherited), dim breadcrumb, the leaf name, and the shortcut hint.
 	Leaf: one font, each color run placed at its EXACT kerned origin (widthOfString(1..i) minus
@@ -6906,19 +6913,19 @@ drawOn: aCanvas
 		aCanvas drawString: cmd atBaseline: cmdX @ baseY font: sf color: hintColor.
 		aCanvas drawString: keyChar asString atBaseline: keyX @ baseY font: f color: hintColor]! !
 
-!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 13:24:16'!
+!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026, 11:24:16 am (UTC)'!
 hintSymbolFont
 	"The Blueprint SymbolFont sized for the shortcut hint -- a touch below the text so the
 	glyphs sit as quiet modifier marks, not shouting."
 	^ SymbolFont fontDescriptionPointSize: (self fontToUse pointSize * 0.9) rounded! !
 
-!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026 13:24:16'!
+!CommandResultMorph methodsFor: 'drawing' stamp: 'ML 5/Jul/2026, 11:24:16 am (UTC)'!
 shiftGlyph
 	"The shift mark from the SymbolFont: Tabler #'arrow-big-up' -- a solid, substantial arrow
 	(DejaVu's Unicode up-arrows are all thin and the same narrow width)."
 	^ UnicodeString empty copyWith: (SymbolFont at: #'arrow-big-up')! !
 
-!CommandResultMorph methodsFor: 'geometry' stamp: 'ML 5/Jul/2026 13:24:16'!
+!CommandResultMorph methodsFor: 'geometry' stamp: 'ML 5/Jul/2026, 11:24:16 am (UTC)'!
 minimumExtent
 	"pad + breadcrumb + leaf + the shortcut-hint column (SymbolFont command mark + shared key
 	column, plus a shift mark for shifted bindings) when present; height = a normal menu item."
@@ -6933,7 +6940,7 @@ minimumExtent
 			ifTrue: [hintW := hintW + (self hintSymbolFont widthOfString: self shiftGlyph)]].
 	^ ((16 * s) + w + hintW) @ (20 * s)! !
 
-!FillWidthScrollPane methodsFor: 'layout' stamp: ''!
+!FillWidthScrollPane methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 extentChanged: oldExtent
 	"Push my width into the scroller so it can re-flow (height stays whatever
 	the scroller decides). Subtract the vertical scrollbar thickness if it's
@@ -6943,7 +6950,7 @@ extentChanged: oldExtent
 	scroller morphExtent: (self innerWidth) @ scroller morphExtent y
 ! !
 
-!FillWidthScrollPane methodsFor: 'layout' stamp: ''!
+!FillWidthScrollPane methodsFor: 'layout' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 innerWidth
 	"Width the scroller must fit into. The pane also reserves an inner padding
 	(BorderedBoxMorph) which we must subtract on top of the scrollbar thickness,
@@ -6954,7 +6961,7 @@ innerWidth
 	^ w max: 1
 ! !
 
-!FillWidthScrollPane methodsFor: 'drawing' stamp: ''!
+!FillWidthScrollPane methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 drawOn: aCanvas
 	"Full-bleed white-alpha panel. We now reach the window edges, and the
 	SystemWindow clips its content to the rounded squircle, so we draw a plain
@@ -6971,15 +6978,15 @@ drawOn: aCanvas
 			radius: 0].
 	super drawOn: aCanvas! !
 
-!FillWidthScrollPane methodsFor: 'drawing' stamp: ''!
+!FillWidthScrollPane methodsFor: 'drawing' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!StageTest methodsFor: 'running' stamp: ''!
+!StageTest methodsFor: 'running' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 setUp
 	stage := Stage new! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testArenaCutsReservedStrips
 	| full |
 	full := stage arena.
@@ -6987,7 +6994,7 @@ testArenaCutsReservedStrips
 	stage reserve: self. "idempotent: same reserver cuts once"
 	self assert: stage arena = ((full left + 100) @ full top corner: full corner)! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testFlightAnnotation
 	stage manage: #w1.
 	stage flightBegan: #w1.
@@ -6998,7 +7005,7 @@ testFlightAnnotation
 	stage forget: #w1.
 	self deny: (stage isInFlight: #w1)! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testForgetDropsEmptiedSpace
 	| s1 |
 	s1 := stage active.
@@ -7011,7 +7018,7 @@ testForgetDropsEmptiedSpace
 	self assert: (stage placementOf: #w1) isNil.
 	self assertInvariants! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testForgetDuringSwitchKeepsLaws
 	stage manage: #w1.
 	stage switchTo: stage spaces last.
@@ -7020,14 +7027,14 @@ testForgetDuringSwitchKeepsLaws
 	self assert: stage windows isEmpty.
 	self assertInvariants! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testManagePutsWindowInActiveSpaceAndSpawnsFreshOne
 	stage manage: #w1.
 	self assert: (stage placementOf: #w1) space == stage active.
 	self assert: stage spaces size = 2.
 	self assertInvariants! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testMinimizeGoesOffStage
 	stage manage: #w1.
 	stage minimize: #w1.
@@ -7039,7 +7046,7 @@ testMinimizeGoesOffStage
 	self assert: ((stage windowsIn: stage active) includes: #w1).
 	self assertInvariants! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testNotifiesViewsInOrder
 	"Every mutation reconciles first (#spaces) and announces its headline event second."
 	| log |
@@ -7051,7 +7058,7 @@ testNotifiesViewsInOrder
 	stage forget: #w1.
 	self assert: log asArray = #(#spaces #managed #spaces #minimized #spaces #restored #spaces #forgotten)! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testOverviewOnlyFromSettled
 	stage manage: #w1.
 	stage switchTo: stage spaces last.
@@ -7060,7 +7067,7 @@ testOverviewOnlyFromSettled
 	self assert: (stage mode fire: #openOverview).
 	self assert: stage mode path = #(#overview #opening)! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testPartitionStableAcrossSwitchRoundTrip
 	| s1 s2 |
 	s1 := stage active.
@@ -7074,7 +7081,7 @@ testPartitionStableAcrossSwitchRoundTrip
 	self assert: stage active == s1.
 	self assertInvariants! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testRestoreAdoptsActiveSpace
 	| s2 |
 	stage manage: #w1.
@@ -7088,7 +7095,7 @@ testRestoreAdoptsActiveSpace
 	self deny: (stage placementOf: #w1) isMinimized.
 	self assertInvariants! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testShownLagsActiveUntilSettled
 	| s1 s2 |
 	s1 := stage active.
@@ -7101,14 +7108,14 @@ testShownLagsActiveUntilSettled
 	self assert: stage shown == s2.
 	self assertInvariants! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testStartsSettledWithOneEmptyActiveSpace
 	self assert: stage spaces size = 1.
 	self assert: stage active == stage spaces first.
 	self assert: stage mode path = #(#live #settled).
 	self assertInvariants! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testSwitchDuringOverviewWaitsForLive
 	| s1 s2 |
 	s1 := stage active.
@@ -7125,7 +7132,7 @@ testSwitchDuringOverviewWaitsForLive
 	stage switchSettled.
 	self assertInvariants! !
 
-!StageTest methodsFor: 'tests' stamp: ''!
+!StageTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 testSwitchWhileSwitchingQueuesAndDrains
 	| s1 s2 |
 	s1 := stage active.
@@ -7141,7 +7148,7 @@ testSwitchWhileSwitchingQueuesAndDrains
 	self assert: (stage mode is: #settled).
 	self assertInvariants! !
 
-!StageTest methodsFor: 'asserting' stamp: ''!
+!StageTest methodsFor: 'asserting' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 assertInvariants
 	"The Stage's standing laws: every placement is either off-stage (minimized into the dock) or
 	points at a live space, and there is always exactly one empty space (the fresh desktop)."
@@ -7151,19 +7158,19 @@ assertInvariants
 	self assert: (stage spaces count: [:sp | (stage windowsIn: sp) isEmpty]) = 1.
 	self assert: (stage spaces includes: stage active)! !
 
-!StageTest methodsFor: 'support' stamp: ''!
+!StageTest methodsFor: 'support' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 screenStrut
 	"The test case doubles as a screen-edge reserver for testArenaCutsReservedStrips."
 	^ #left -> 100! !
 
-!StateMachineTest methodsFor: 'tests' stamp: ''!
+!StateMachineTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testCanReflectsLegality
 	| m |
 	m := self turnstile.
 	self assert: (m can: #coin).
 	self deny: (m can: #push)! !
 
-!StateMachineTest methodsFor: 'tests' stamp: ''!
+!StateMachineTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testFireOrQueueDrainsWhenLegal
 	| m |
 	m := self turnstile.
@@ -7172,14 +7179,14 @@ testFireOrQueueDrainsWhenLegal
 	m fire: #coin.
 	self assert: (m is: #locked)! !
 
-!StateMachineTest methodsFor: 'tests' stamp: ''!
+!StateMachineTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testIllegalTransitionIsNoOp
 	| m |
 	m := self turnstile.
 	self deny: (m fire: #push).
 	self assert: (m is: #locked)! !
 
-!StateMachineTest methodsFor: 'tests' stamp: ''!
+!StateMachineTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testInitialState
 	| m |
 	m := self turnstile.
@@ -7187,7 +7194,7 @@ testInitialState
 	self assert: (m is: #locked).
 	self deny: (m is: #unlocked)! !
 
-!StateMachineTest methodsFor: 'tests' stamp: ''!
+!StateMachineTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testIntrospection
 	| m |
 	m := self turnstile.
@@ -7196,14 +7203,14 @@ testIntrospection
 	self assert: (m states = (Set withAll: #(#locked #unlocked))).
 	self assert: m allTransitions size = 2! !
 
-!StateMachineTest methodsFor: 'tests' stamp: ''!
+!StateMachineTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testLegalTransitionFires
 	| m |
 	m := self turnstile.
 	self assert: (m fire: #coin).
 	self assert: (m is: #unlocked)! !
 
-!StateMachineTest methodsFor: 'tests' stamp: ''!
+!StateMachineTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testOnTransitionFiresOnlyOnRealTransition
 	| m hits |
 	m := self turnstile.
@@ -7214,14 +7221,14 @@ testOnTransitionFiresOnlyOnRealTransition
 	m fire: #coin.
 	self assert: (hits asArray = (Array with: #unlocked))! !
 
-!StateMachineTest methodsFor: 'tests' stamp: ''!
+!StateMachineTest methodsFor: 'tests' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testOnWrapperSpec
 	| m |
 	m := StateMachine initial: #a states: { #a -> { #on -> { #go -> #b } }. #b -> {  } }.
 	self assert: (m fire: #go).
 	self assert: (m is: #b)! !
 
-!StateMachineTest methodsFor: 'fixtures' stamp: ''!
+!StateMachineTest methodsFor: 'fixtures' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 nestedMachine
 	"The window-mode chart: live(settled|switching) and overview(opening|visible|closing)."
 	^ StateMachine initial: #live states: {
@@ -7238,13 +7245,13 @@ nestedMachine
 				#visible -> { #dismiss -> #closing }.
 				#closing -> { #hidden -> #live } } } }! !
 
-!StateMachineTest methodsFor: 'fixtures' stamp: ''!
+!StateMachineTest methodsFor: 'fixtures' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 turnstile
 	^ StateMachine initial: #locked states: {
 		#locked   -> { #coin -> #unlocked }.
 		#unlocked -> { #push -> #locked } }! !
 
-!StateMachineTest methodsFor: 'tests - hierarchy' stamp: ''!
+!StateMachineTest methodsFor: 'tests - hierarchy' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testChildShadowsParent
 	"The same event on child and parent: the child's transition wins (leaf-first lookup)."
 	| m |
@@ -7257,7 +7264,7 @@ testChildShadowsParent
 	m fire: #go.
 	self assert: m state = #a2! !
 
-!StateMachineTest methodsFor: 'tests - hierarchy' stamp: ''!
+!StateMachineTest methodsFor: 'tests - hierarchy' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testEventBubblesToParent
 	"openOverview is declared on #live but fired while sitting in its #settled child."
 	| m |
@@ -7266,7 +7273,7 @@ testEventBubblesToParent
 	self assert: m state = #opening.
 	self assert: (m is: #overview)! !
 
-!StateMachineTest methodsFor: 'tests - hierarchy' stamp: ''!
+!StateMachineTest methodsFor: 'tests - hierarchy' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testFlatSpecUnchanged
 	"A spec with no reserved keys is a plain FSM: single-element path, no ancestors."
 	| m |
@@ -7276,7 +7283,7 @@ testFlatSpecUnchanged
 	m fire: #go.
 	self assert: m state = #busy! !
 
-!StateMachineTest methodsFor: 'tests - hierarchy' stamp: ''!
+!StateMachineTest methodsFor: 'tests - hierarchy' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testInheritedCanAndPossibleEvents
 	| m |
 	m := self nestedMachine.
@@ -7285,7 +7292,7 @@ testInheritedCanAndPossibleEvents
 	self deny: (m can: #dismiss).
 	self assert: (m possibleEvents includes: #openOverview)! !
 
-!StateMachineTest methodsFor: 'tests - hierarchy' stamp: ''!
+!StateMachineTest methodsFor: 'tests - hierarchy' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testIsMatchesAncestors
 	| m |
 	m := self nestedMachine.
@@ -7293,14 +7300,14 @@ testIsMatchesAncestors
 	self assert: (m is: #live).
 	self deny: (m is: #overview)! !
 
-!StateMachineTest methodsFor: 'tests - hierarchy' stamp: ''!
+!StateMachineTest methodsFor: 'tests - hierarchy' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testNestedEntersInitialLeaf
 	| m |
 	m := self nestedMachine.
 	self assert: m state = #settled.
 	self assert: m path = #(#live #settled)! !
 
-!StateMachineTest methodsFor: 'tests - hierarchy' stamp: ''!
+!StateMachineTest methodsFor: 'tests - hierarchy' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testResetDescendsToLeaf
 	| m |
 	m := self nestedMachine.
@@ -7308,7 +7315,7 @@ testResetDescendsToLeaf
 	m reset.
 	self assert: m state = #settled! !
 
-!StateMachineTest methodsFor: 'tests - hierarchy' stamp: ''!
+!StateMachineTest methodsFor: 'tests - hierarchy' stamp: 'ML 10/Aug/2026, 6:21:16 pm (UTC)'!
 testTransitionToCompoundEntersInitial
 	"#hidden -> #live from deep inside overview descends to live's initial leaf."
 	| m |
@@ -7317,31 +7324,31 @@ testTransitionToCompoundEntersInitial
 	self assert: m state = #settled.
 	self assert: m path = #(#live #settled)! !
 
-!Theme methodsFor: '*Blueprint' stamp: ''!
+!Theme methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 accentColor
 	"Blueprint's accent: the selection/highlight blue. On base Theme so Blueprint
 	chrome renders under any current theme; BlueprintTheme inherits it."
 	^ Color r: 0.0 g: 0.533 b: 1.0! !
 
-!Theme methodsFor: '*Blueprint' stamp: ''!
+!Theme methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 chromeBody
 	"THE dark translucent chrome body -- menus, dock, popovers. One cool near-black;
 	surfaces with a deliberate translucency difference adjust via #alpha: at the call site."
 	^ Color r: 0.05 g: 0.06 b: 0.07 alpha: 0.8! !
 
-!Theme methodsFor: '*Blueprint' stamp: ''!
+!Theme methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 chromeHairline
 	"Outer 0.5px grounding stroke on dark chrome surfaces: a soft black hairline that
 	separates the surface from whatever is behind it."
 	^ Color black alpha: 0.6! !
 
-!Theme methodsFor: '*Blueprint' stamp: ''!
+!Theme methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 chromeHighlight
 	"Inner 1px top-light stroke on dark chrome surfaces (menu, dock, popover): a faint
 	white lifts the edge off the background, reading as ambient light on the rim."
 	^ Color white alpha: 0.16! !
 
-!Theme methodsFor: '*Blueprint' stamp: ''!
+!Theme methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 fontAt: step
 	"The UI font at a type-scale step, as a physical TrueTypeFont: pointsAt: (logical)
 	scaled by the display ratio and rounded once. THE way Blueprint code asks for a
@@ -7350,7 +7357,7 @@ fontAt: step
 	^ FontFamily familyName: FontFamily defaultFamilyName
 		pointSize: ((self pointsAt: step) * DisplayScreen hostOSScaleFactor) rounded! !
 
-!Theme methodsFor: '*Blueprint' stamp: ''!
+!Theme methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 pointsAt: step
 	"LOGICAL point size at a Blueprint type-scale step: the rem root (BlueprintTheme
 	fontPointSize, default 12) times ratio^step, ratio 2^(1/3) -- a modular scale whose
@@ -7358,36 +7365,36 @@ pointsAt: step
 	On base Theme so menu/window text sizes correctly under any current theme."
 	^ BlueprintTheme fontPointSize * ((2 raisedTo: 1/3) raisedTo: step)! !
 
-!Theme methodsFor: '*Blueprint' stamp: ''!
+!Theme methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 roundedMenuRadius
 	"Menu / popover corner radius in LOGICAL px (windows use roundedWindowRadius;
 	menus and popovers are tighter). Consumers multiply by hostScale."
 	^ 12! !
 
-!Theme methodsFor: '*Blueprint' stamp: ''!
+!Theme methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 roundedMiniRadius
 	"Corner radius (LOGICAL px) for miniature window representations: SpaceCard screens
 	and their WindowProxyMorph proxies."
 	^ 3! !
 
-!Theme methodsFor: '*Blueprint' stamp: ''!
+!Theme methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 windowHairline
 	"Outer hairline on window-coloured chrome: opaque black, since light bodies need a
 	full-strength edge to read as an object boundary."
 	^ Color black! !
 
-!Theme methodsFor: '*Blueprint' stamp: ''!
+!Theme methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 windowHighlight
 	"Inner 1px stroke on window-coloured (light) chrome: SystemWindow frames and the
 	halo title pill. Stronger than #chromeHighlight because it sits on a light body."
 	^ Color white alpha: 0.5! !
 
-!Theme class methodsFor: '*Blueprint' stamp: 'ML 3/Jul/2026 16:09:41'!
+!Theme class methodsFor: '*Blueprint' stamp: 'ML 3/Jul/2026, 2:09:41 pm (UTC)'!
 fitDisplay
 	"Hook: the display geometry changed (see WorldMorph>>restoreDisplay). Themes
 	with desktop furniture refit it here. Default: nothing to refit."! !
 
-!Morph methodsFor: '*Blueprint' stamp: ''!
+!Morph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addHalo: aMorphicEventOrNil
 	"Summon the halo. For the Blueprint halo, also give it keyboard focus so
 	Backspace/Delete can delete the target while the halo is up. Focus is grabbed
@@ -7407,7 +7414,7 @@ addHalo: aMorphicEventOrNil
 	^ halo
 ! !
 
-!Morph methodsFor: '*Blueprint' stamp: ''!
+!Morph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addItemTo: topMenu fromSpec: itemSpec submenus: submenusDictionary
 	"
 	See coment at Morph >> #getMenu
@@ -7451,7 +7458,7 @@ addItemTo: topMenu fromSpec: itemSpec submenus: submenusDictionary
 				menuItem isEnabled: (target perform: enabledSelector) ]].
 ! !
 
-!Morph methodsFor: '*Blueprint' stamp: ''!
+!Morph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 collapse
 	"Blueprint: minimize self into the dock (the world taskbar) if it is a top-level world submorph
 	with a measurable size (via fullBoundsInOwner, so vector morphs with nil morphExtent still dock);
@@ -7464,19 +7471,19 @@ collapse
 		(dock notNil and: [dock isKindOf: Dock]) ifTrue: [^ dock minimize: self]].
 	self hide! !
 
-!Morph methodsFor: '*Blueprint' stamp: ''!
+!Morph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 haloClass
 	"The halo class used by #addHalo:."
 	^ MorphHalo! !
 
-!Morph methodsFor: '*Blueprint' stamp: ''!
+!Morph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 hostScale
 	"The display's device-pixel ratio (physical px per logical pt). Blueprint convention:
 	every literal pixel metric is a round LOGICAL value multiplied by this. Font-derived
 	metrics (lineSpacing, widthOfString:) are already physical -- do not double-scale."
 	^ DisplayScreen hostOSScaleFactor! !
 
-!Morph methodsFor: '*Blueprint' stamp: ''!
+!Morph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isManagedDesktopMorph
 	"Is this a managed desktop morph -- a window or plain morph the desktop arranges /
 	collapses / groups / overviews, vs chrome or the manager itself?
@@ -7486,7 +7493,7 @@ isManagedDesktopMorph
 	callers, then remove isIncludedInTaskbar."
 	^ self isIncludedInTaskbar! !
 
-!Morph methodsFor: '*Blueprint' stamp: ''!
+!Morph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 opticalBounds
 	"READ-ONLY. Bounding box of our actually-rendered ink (non-transparent
 	pixels), in local coordinates -- the visual mass, as opposed to the
@@ -7504,14 +7511,14 @@ opticalBounds
 	t isNil ifTrue: [^ self localBounds].
 	^ l @ t corner: (r + 1) @ (b + 1)! !
 
-!Morph methodsFor: '*Blueprint' stamp: ''!
+!Morph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 tuneAt: aKey default: aNumber
 	"Read a live-tunable parameter: an override stored as a property if present, else the
 	production default. Lets a tuner (e.g. a BlueprintSlider rig) drive geometry live without
 	changing shipped constants; in production the property is absent and the default rules."
 	^ (self valueOfProperty: aKey) ifNil: [aNumber]! !
 
-!BoxMorph methodsFor: '*Blueprint' stamp: ''!
+!BoxMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 fullScreen
 	"Zoom Window to Full World size with possible DeskMargins"
 
@@ -7530,13 +7537,13 @@ fullScreen
 		].
 	self position: possibleBounds topLeft extent: possibleBounds extent.! !
 
-!TaskbarMorph methodsFor: '*Blueprint' stamp: ''!
+!TaskbarMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 collapse
 	"Blueprint chrome: a taskbar/dock never collapses into a dock (it is the dock). Opts out
 	of Morph>>collapse the same way the dock chrome and the demo morphs do -- by overriding
 	#collapse rather than relying on a hardcoded exclusion list."! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addStayUpIcons
 	"Blueprint: quiet glyph controls in the title row instead of the base button strip --
 	a close cross (rightmost) and a pin that keeps the menu up, turning accent when
@@ -7561,7 +7568,7 @@ addStayUpIcons
 	self setProperty: #hasStayUpIcons toValue: true.
 	self removeProperty: #needsStayUpIcons! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addTitle: aString
 	"A quiet header inside the dark chrome -- Cuis uses menu titles to ask the user
 	questions ('Select a theme...') and to show progress (informUserDuring:, which
@@ -7592,7 +7599,7 @@ addTitle: aString
 	self addMorphFront: titleMorph.
 	(self hasProperty: #needsStayUpIcons) ifTrue: [self addStayUpIcons]! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 adjustSubmorphsLayout
 	"Blueprint: items inset 4 dp from the inner chrome edge on all sides.
 	Chrome body inset is 1.5 dp, so the value here is 5.5 dp from origin."
@@ -7609,7 +7616,7 @@ adjustSubmorphsLayout
 		p := p + (0 @ h)].
 	self morphExtent: (w + (padH * 2)) @ (p y + padV)! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:13:13'!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026, 9:13:13 am (UTC)'!
 collectCommandsFrom: aMenu path: pathArray into: aColl depth: depth
 	"Recursively flatten aMenu into aColl as command entries. Each entry is an Array
 	{ pathLabels. leafLabel. sourceItem }: pathLabels are the ancestor submenu-opening item
@@ -7627,7 +7634,7 @@ collectCommandsFrom: aMenu path: pathArray into: aColl depth: depth
 					depth: depth + 1]
 				ifFalse: [aColl add: (Array with: pathArray with: item contents with: item)]]]! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:22:29'!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026, 9:22:29 am (UTC)'!
 displayFiltered: evt
 	"Blueprint command-palette filter -- replaces the base disable-in-place behavior and the
 	gray <foo> feedback label. An empty query restores the normal menu; a non-empty query
@@ -7640,7 +7647,7 @@ displayFiltered: evt
 			self enterSearchModeIfNeeded.
 			self rebuildResultsFor: matchStr]! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 14:00:19'!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026, 12:00:19 pm (UTC)'!
 drawOn: aCanvas
 	"Dark chrome body (Apple-continuous-corner squircle, radius Theme roundedMenuRadius), filled
 	over the FULL localBounds like SystemWindow -- so the edge strokes (postDrawOn:) compose ON
@@ -7652,7 +7659,7 @@ drawOn: aCanvas
 	aCanvas fillColor: (Theme current chromeBody alpha: 0.92) do: [
 		aCanvas squircle: self localBounds radius: r]! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:33:14'!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026, 9:33:14 am (UTC)'!
 enterSearchModeIfNeeded
 	"First keystroke: build & cache the command index (while the real items are still here),
 	detach the normal items/lines into #normalBody, then add the display-only search row under
@@ -7668,7 +7675,7 @@ enterSearchModeIfNeeded
 	self setProperty: #searchRow toValue: searchRow.
 	self setProperty: #inSearchMode toValue: true! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:33:14'!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026, 9:33:14 am (UTC)'!
 exitSearchMode
 	"Restore the normal menu: drop the search row and result rows, re-attach the saved
 	items/lines, and clear the cached index + search state. A no-op when not in search mode."
@@ -7683,7 +7690,7 @@ exitSearchMode
 	self selectItem: nil.
 	self adjustSubmorphsLayout! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:11:51'!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026, 9:11:51 am (UTC)'!
 fuzzyScoreOf: query for: candidate
 	"Greedy in-order subsequence match of query against candidate (a leaf label),
 	case-insensitive. Answers nil when not every query char occurs in order; otherwise
@@ -7725,7 +7732,7 @@ fuzzyScoreOf: query for: candidate
 	score := score - (candidate size // 8).
 	^ Array with: score with: matched asArray! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:13:13'!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026, 9:13:13 am (UTC)'!
 paletteCommands
 	"The cached flat command index for this menu: an OrderedCollection of
 	{ pathLabels. leafLabel. sourceItem } entries built by recursively flattening the whole
@@ -7737,7 +7744,7 @@ paletteCommands
 		self setProperty: #paletteIndex toValue: coll.
 		coll ]! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 14:15:04'!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026, 12:15:04 pm (UTC)'!
 postDrawOn: aCanvas
 	"Chrome edge on top of the items: the inner highlight + a 0.5px outer hairline, via the
 	shared chromeStrokes recipe. Now that the body fills full bounds (see drawOn:), the highlight
@@ -7748,7 +7755,7 @@ postDrawOn: aCanvas
 		inner: Theme current chromeHighlight outer: Theme current chromeHairline.
 	^ true! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 11:33:14'!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026, 9:33:14 am (UTC)'!
 rebuildResultsFor: matchStr
 	"Remove the previous result rows, fuzzy-rank the command index against matchStr, and add a
 	CommandResultMorph per hit (capped). Auto-select the top hit so Return invokes it, and
@@ -7776,7 +7783,7 @@ rebuildResultsFor: matchStr
 	(self valueOfProperty: #searchRow) ifNotNil: [:sr | sr matchString: matchStr].
 	self adjustSubmorphsLayout! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 removeStayUpBox
 	"Blueprint: called by stayUp: when the menu becomes pinned. Keep both controls -- a
 	pinned menu still wants its close cross -- and flip the pin to its accent 'pinned'
@@ -7787,11 +7794,11 @@ removeStayUpBox
 		b idleColor: Theme current accentColor.
 		b redrawNeeded]! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 titleControl: glyphSymbol action: aBlock
 	"A quiet glyph control for the title row: dim white at rest, hover-brightened
 	(SymbolButton), right-aligned by the MenuTitleMorph."
@@ -7804,7 +7811,7 @@ titleControl: glyphSymbol action: aBlock
 	b setProperty: #rightAligned toValue: true.
 	^ b! !
 
-!MenuMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 togglePin
 	"Pin the menu open, or let it go again. Pinning goes through the base stayUp
 	contract (stayUp: true calls removeStayUpBox, which flips the glyph to its accent
@@ -7819,30 +7826,30 @@ togglePin
 				b redrawNeeded]]
 		ifFalse: [self stayUp]! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 chevronSubmorph
 	^ self valueOfProperty: #chevronMorph! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 chevronSubmorph: aMorphOrNil
 	self setProperty: #chevronMorph toValue: aMorphOrNil! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 cmdSignSubmorph
 	"The command-sign part of the shortcut hint, held as a morph PROPERTY (not an ivar)
 	so this package adds no instance variables to the base MenuItemMorph. Separate from
 	the key label so both edges of the hint column can align across items."
 	^ self valueOfProperty: #cmdSignMorph! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 cmdSignSubmorph: aMorphOrNil
 	self setProperty: #cmdSignMorph toValue: aMorphOrNil! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 contents: aString
 	^ self contentsWithMarkers: aString inverse: false! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 3/Jul/2026 15:39:18'!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 3/Jul/2026, 1:39:18 pm (UTC)'!
 contentsWithMarkers: aString inverse: invertMarkers
 	"Parse a leading <on>/<off>/<yes>/<no> marker. When present, remember the
 	full string in contentString (so a toggle can re-render) and stash the
@@ -7881,7 +7888,7 @@ contentsWithMarkers: aString inverse: invertMarkers
 	self setProperty: #checkState toValue: checkOn.
 	self rebuildContent! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"Selection pill only. All content (icon, label, chevron) is drawn by
 	submorphs — this morph paints just its background highlight."
@@ -7897,18 +7904,18 @@ drawOn: aCanvas
 				maxY: bounds bottom
 				rx: 8 * s ry: 8 * s]]! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 dropIconSubmorph
 	self iconSubmorph ifNotNil: [:m | m delete. self iconSubmorph: nil]! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 extentChanged: oldExtent
 	"Reposition content submorphs whenever the menu resizes us to the column
 	width."
 	super extentChanged: oldExtent.
 	self layoutSubmorphs! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 13:37:31'!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 5/Jul/2026, 11:37:31 am (UTC)'!
 fadedFormOf: aForm
 	"A dimmed copy of aForm at reduced opacity: alpha scaled down via image:multipliedBy:, with
 	color and true transparency preserved -- unlike asGrayScaleAndTransparent, which remaps the
@@ -7919,21 +7926,21 @@ fadedFormOf: aForm
 	(VectorCanvas onForm: faded) image: aForm multipliedBy: (Color white alpha: 0.35) at: `0@0`.
 	^ faded! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 fontToUse
 	"Menu item text: one step below body on the Blueprint type scale -- menus are
 	transient chrome and read best slightly smaller than content. Follows the zoom
 	knob (BlueprintTheme fontPointSize:) and the user's font family."
 	^ Theme current fontAt: -1! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 hasMarker
 	"Whether the item shows a check marker, read from the parsed #checkState
 	property (an <on>/<off>/<yes>/<no> state in the label). Submorph count says
 	nothing here -- every item carries a label submorph."
 	^ (self valueOfProperty: #checkState) notNil! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 hintColumnWidth
 	"Width of the shared right-hand column that holds the shortcut KEY character of
 	hint items and the CHEVRON of submenu items -- one visual track for the whole
@@ -7941,17 +7948,17 @@ hintColumnWidth
 	font, so everything centered in it aligns across items."
 	^ self fontToUse widthOf: $W! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 hintSubmorph
 	"The right-aligned keyboard-shortcut hint submorph, held as a morph PROPERTY (not an
 	ivar) so this package adds no instance variables to the base MenuItemMorph."
 	^ self valueOfProperty: #hintMorph! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 hintSubmorph: aMorphOrNil
 	self setProperty: #hintMorph toValue: aMorphOrNil! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 13:37:31'!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 5/Jul/2026, 11:37:31 am (UTC)'!
 iconFormScaled
 	"The item's Form icon scaled to the menu icon size (16 dp), aspect-preserved and smoothed;
 	dimmed by reduced OPACITY when disabled (color + transparency intact)."
@@ -7967,17 +7974,17 @@ iconFormScaled
 		ifFalse: [icon magnify: icon boundingBox to: (w * sc) rounded @ (h * sc) rounded smoothing: 2].
 	^ isEnabled ifTrue: [scaled] ifFalse: [self fadedFormOf: scaled]! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 iconSubmorph
 	"The leading icon submorph, held as a morph PROPERTY (not an ivar) so this package adds no
 	instance variables to the base MenuItemMorph -- which lets it install cleanly into a fresh image."
 	^ self valueOfProperty: #iconMorph! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 iconSubmorph: aMorphOrNil
 	self setProperty: #iconMorph toValue: aMorphOrNil! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initialize
 	"Morph-based menu item: data + a label submorph (+ optional icon/chevron
 	built on demand). drawOn: paints only the selection pill; the label, icon
@@ -7997,27 +8004,27 @@ initialize
 	self addMorphBack: self labelSubmorph.
 	self contents: ''! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isEnabled: aBoolean
 	isEnabled = aBoolean ifTrue: [^ self].
 	isEnabled := aBoolean.
 	self rebuildContent! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 isSelected: aBoolean
 	isSelected := aBoolean.
 	self updateColors.
 	self redrawNeeded! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 labelSubmorph
 	^ self valueOfProperty: #labelMorph! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 labelSubmorph: aMorphOrNil
 	self setProperty: #labelMorph toValue: aMorphOrNil! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 layoutSubmorphs
 	"Position content submorphs in a row, each vertically centered in the item:
 	  padH | iconSlot(icon centered) | gap | label | flex | [cmd sign][key column] | padH.
@@ -8055,12 +8062,12 @@ layoutSubmorphs
 			self cmdSignSubmorph morphPosition:
 				(colLeft - (2 * s) - self cmdSignSubmorph morphWidth) @ ((rowH - self cmdSignSubmorph morphHeight) / 2)]]! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 minItemWidth
 	"Same width math as #minimumExtent â pad + icon slot + gap + text + pad."
 	^ self minimumExtent x! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 14:00:19'!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 5/Jul/2026, 12:00:19 pm (UTC)'!
 minimumExtent
 	"pad + (icon slot + gap when the menu reserves an icon column) + label width + the SHARED
 	trailing column (shortcut/chevron track reserved for every item, so labels never cross into
@@ -8074,7 +8081,7 @@ minimumExtent
 	labelW := self labelSubmorph isNil ifTrue: [0] ifFalse: [self labelSubmorph morphWidth].
 	^ ((padH * 2) + iconSlotW + gap + labelW + self sharedTrailingWidth) @ (20 * s)! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 mouseEnter: aMouseEnterEvent
 	"Forgiving submenu logic:
 	1. If we are inside a submenu, clear the parent menu's triangle (we've arrived).
@@ -8088,7 +8095,7 @@ mouseEnter: aMouseEnterEvent
 			^ self].
 		owner selectItem: self]! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 14:00:19'!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 5/Jul/2026, 12:00:19 pm (UTC)'!
 ownTrailingWidth
 	"The width THIS item's own shortcut hint (command sign + key column) or submenu chevron
 	(key column) needs at the right. Zero when it has neither."
@@ -8103,7 +8110,7 @@ ownTrailingWidth
 		trailing := trailing + (16 * s) + cmdW + (2 * s) + colW].
 	^ trailing! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 rebuildChevron
 	"Submenu marker: a chevron glyph, right-centered in the shared key column
 	(see layoutSubmorphs)."
@@ -8120,7 +8127,7 @@ rebuildChevron
 		self chevronSubmorph lock.
 		self addMorphBack: self chevronSubmorph]! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 rebuildContent
 	"(Re)build content submorphs from current state -- each visual part is its own
 	morph with its own rebuild: leading icon/check slot, text label, shortcut hint,
@@ -8136,7 +8143,7 @@ rebuildContent
 	self layoutSubmorphs.
 	self redrawNeeded! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 13:37:31'!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 5/Jul/2026, 11:37:31 am (UTC)'!
 rebuildHint
 	"The shortcut hint: SymbolFont command (and shift) marks as one submorph, plus the key
 	character as another, so both edges of the hint column rule across items. A shifted
@@ -8163,7 +8170,7 @@ rebuildHint
 	self hintSubmorph contents: (UnicodeString empty copyWith: hint asUppercase).
 	self hintSubmorph font: self fontToUse! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 rebuildIconSlot
 	"The leading slot: a native check glyph for an <on> item (an <off> item shows
 	nothing, but the column stays reserved -- see showsIcon), a vector icon Morph
@@ -8198,11 +8205,11 @@ rebuildIconSlot
 		self addMorphBack: self iconSubmorph].
 	self iconSubmorph image: iconForm! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 reservesIconColumn
 	"True when some item in the same menu shows an icon, so the whole menu
 	reserves the leading icon column and labels stay aligned. When no sibling
@@ -8212,7 +8219,7 @@ reservesIconColumn
 	o isNil ifTrue: [^ self showsIcon].
 	^ o submorphs anySatisfy: [:m | (m isKindOf: MenuItemMorph) and: [m showsIcon]]! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 select
 	self isSelected: true.
 	owner activeSubmenu: subMenu.
@@ -8234,7 +8241,7 @@ select
 				owner recordForgiveApexAt: hand morphPosition]].
 		subMenu selectItem: nil]! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 setIcon: aMorphOrFormOrSymbolOrNil
 	"The icon may be a Morph (used directly as a vector icon, e.g. a SymbolMorph
 	-- no bitmap), a Form, a Symbol (sent to Theme current to look up a Form) or
@@ -8244,7 +8251,7 @@ setIcon: aMorphOrFormOrSymbolOrNil
 		ifFalse: [aMorphOrFormOrSymbolOrNil].
 	self rebuildContent! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: 'ML 5/Jul/2026 14:00:19'!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 5/Jul/2026, 12:00:19 pm (UTC)'!
 sharedTrailingWidth
 	"The trailing shortcut/chevron column reserved for EVERY item in this menu -- the widest such
 	track any sibling needs -- so all labels stop at one vertical line and shortcuts/chevrons
@@ -8255,19 +8262,19 @@ sharedTrailingWidth
 	^ o submorphs inject: 0 into: [:mx :m |
 		(m is: #MenuItemMorph) ifTrue: [mx max: m ownTrailingWidth] ifFalse: [mx]]! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 showsIcon
 	"Whether this item claims the icon slot -- a vector or Form icon, a check marker,
 	or BEING CHECKABLE at all: an <off> item shows no mark (macOS convention) but must
 	still reserve the column, so labels do not shift when the state toggles."
 	^ self iconSubmorph notNil or: [(self valueOfProperty: #checkState) notNil]! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 subMenu: aMenuMorph
 	subMenu := aMenuMorph.
 	self rebuildContent! !
 
-!MenuItemMorph methodsFor: '*blueprint-menu' stamp: ''!
+!MenuItemMorph methodsFor: '*Blueprint-menu' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 updateColors
 	"Apply selection/enabled-dependent colors to the content submorphs. Light
 	because the menu background is dark; bright white when selected. A vector
@@ -8292,7 +8299,7 @@ updateColors
 	self hintSubmorph ifNotNil: [self hintSubmorph color: hintColor].
 	self cmdSignSubmorph ifNotNil: [self cmdSignSubmorph color: hintColor]! !
 
-!TextModelMorph methodsFor: '*Blueprint' stamp: ''!
+!TextModelMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 adoptWidgetsColor: paneColor
 	"Blueprint: the text pane keeps its translucent-white textPane colour (so the
 	window colour tints through) instead of the opaque paneBackgroundFrom: that
@@ -8302,19 +8309,19 @@ adoptWidgetsColor: paneColor
 	scrollBar ifNotNil: [ :sb | sb adoptWidgetsColor: paneColor ].
 	hScrollBar ifNotNil: [ :sb | sb adoptWidgetsColor: paneColor ]! !
 
-!TextModelMorph methodsFor: '*Blueprint' stamp: ''!
+!TextModelMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 defaultColor
 	"Blueprint: theme-driven translucent white text pane (see Theme>>textPane)."
 	^ Theme current textPane! !
 
-!TextModelMorph methodsFor: '*Blueprint' stamp: ''!
+!TextModelMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 defaultPadding
 	"Blueprint: 8 logical px inner padding (x hostOSScaleFactor for physical)."
 	| s |
 	s := DisplayScreen hostOSScaleFactor.
 	^ (8 * s) @ (8 * s)! !
 
-!TextModelMorph methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 15:00:00'!
+!TextModelMorph methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026, 1:00:00 pm (UTC)'!
 drawOn: aCanvas
 	"Blueprint: same as vanilla TextModelMorph>>drawOn: but skip the keyboard-focus
 	outline (it's distracting since focus follows mouse). Keep the red/tan feedback
@@ -8342,7 +8349,7 @@ drawOn: aCanvas
 			borderWidth: bw
 			color: bc]! !
 
-!ScrollBar methodsFor: '*Blueprint' stamp: ''!
+!ScrollBar methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 color: aColor
 	"Blueprint: pane color drives the chrome, but the SLIDER (thumb) gets a fixed
 	higher-contrast ink -- black at 0.15 alpha -- so it reads on light scroll
@@ -8355,7 +8362,7 @@ color: aColor
 	slider mouseOverColor: slider color.
 	sliderShadow color: (color alphaMixed: 0.45 with: Theme current scrollbarSliderShadowColor)! !
 
-!ScrollBar methodsFor: '*Blueprint' stamp: ''!
+!ScrollBar methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 computeSlider
 	"Position the slider thumb, inset by a margin from BOTH ends of the track so
 	it has breathing room at the min/max positions (stock pinned it flush to the
@@ -8374,7 +8381,7 @@ computeSlider
 		ifFalse: [
 			slider morphPosition: borderWidth @ (borderWidth + delta) ]! !
 
-!ScrollBar methodsFor: '*Blueprint' stamp: ''!
+!ScrollBar methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"Blueprint: when the theme's scrollbarColor is fully transparent, skip the
 	track fill entirely so only the slider (a submorph) is visible. Otherwise
@@ -8390,7 +8397,7 @@ drawOn: aCanvas
 		baseColorForBorder: borderColor
 ! !
 
-!ScrollBar methodsFor: '*Blueprint' stamp: ''!
+!ScrollBar methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 expandSlider
 	"Blueprint: enforce a minimum slider extent of 30 logical px so the slider
 	stays grabbable even for very tall content. Slider thickness uses the
@@ -8404,7 +8411,7 @@ expandSlider
 		ifFalse: [ self thickness - (self sliderSlack * 2) @ e ])
 ! !
 
-!ScrollBar methodsFor: '*Blueprint' stamp: ''!
+!ScrollBar methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initializeSlider
 	"Stock setup. Thumb color is set centrally in #color: (so it survives the
 	pane-color adoption that runs after init), not here."
@@ -8419,7 +8426,7 @@ initializeSlider
 	self addMorph: slider.
 	self computeSlider! !
 
-!ScrollBar methodsFor: '*Blueprint' stamp: ''!
+!ScrollBar methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 sliderGrabbedAt: handPositionRelativeToSlider
 	"Blueprint: if the theme's scrollbarSliderShadowColor is fully transparent,
 	skip showing the drag-shadow rectangle (otherwise the alphaMixed: formula
@@ -8439,7 +8446,7 @@ sliderGrabbedAt: handPositionRelativeToSlider
 		show
 ! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 addResizeHalo
 	"Attach a SystemWindowResizeHalo as a direct submorph if not already present.
 	Idempotent: re-running on a window that already has one is a no-op."
@@ -8450,22 +8457,22 @@ addResizeHalo
 	halo morphExtent: self morphExtent.
 	self addMorphFront: halo! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 allowedArea
 	^ Stage default arena insetBy: Theme current fullScreenDeskMargin! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 clipsSubmorphs
 	"Clip our content to our drawn squircle contour (see drawOn:/wantsContour),
 	so rounded corners are honoured even where a pane fills to the edge."
 	^ true! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 defaultColor
 	"Default body color: greyish. Specific window classes override."
 	^ Color gray! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 defaultLayerNumber
 	"While a window is docked-minimized it should sit above the Dock chrome (L=50)
 	even if its explicit #layerNumber property got cleared by a comeToFront call."
@@ -8473,7 +8480,7 @@ defaultLayerNumber
 		ifTrue: [40]
 		ifFalse: [super defaultLayerNumber]! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 06:54:26'!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026, 4:54:26 am (UTC)'!
 drawLabelOn: aCanvas
 	"Left-aligned, flat title. Begins a fixed gap past the traffic-light buttons;
 	its cap-height band is vertically centred on those buttons; truncates with a
@@ -8507,7 +8514,7 @@ drawLabelOn: aCanvas
 		font: f color: (Color black alpha: 0.8)
 		embossed: false! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"Blueprint chrome: fill the squircle body in self color."
 	| r bounds s |
@@ -8523,7 +8530,7 @@ drawOn: aCanvas
 			radius: r * s].
 	labelString ifNotNil: [self drawLabelOn: aCanvas]! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 extentChanged: oldExtent
 	"Resize our layoutMorph and any SystemWindowResizeHalo submorph to follow
 	the new extent (halo always fills the whole window)."
@@ -8536,7 +8543,7 @@ extentChanged: oldExtent
 			halo morphPosition: 0 @ 0.
 			halo morphExtent: extent]! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 14:00:00'!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026, 12:00:00 pm (UTC)'!
 fullScreen
 	"Toggle between normal bounds and (almost) fullscreen, animating the bounds on the shared Animator.
 	A second toggle returns to the bounds remembered in #preMaximizeBounds."
@@ -8555,7 +8562,7 @@ fullScreen
 		e := fromRect extent + ((toRect extent - fromRect extent) * t).
 		self morphPosition: o; morphExtent: e] duration: 300 easing: #cubicInOut onDone: []! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 fullyCoveredRectangle
 	"Answer a Rectangle we are certain is completely covered by us.
 	Answer nil if we can't be certain about a better answer.
@@ -8575,15 +8582,15 @@ fullyCoveredRectangle
 	e := (self externalizeDistanceToWorld: 0@Theme current roundedWindowRadius) ceiling.
 	^ (b origin + e) corner: (b corner - e)! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initialExtent
 	^ Stage default standardWindowExtent! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initialFrameIn: aWorld
 	^ Stage default initialFrameFor: self initialExtent! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initialize
 	"Initialize a system window. Add label, stripes, etc., if desired"
 	super initialize.
@@ -8594,7 +8601,7 @@ initialize
 	self beColumn.
 	self addResizeHalo! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initializeLabelArea
 	"Initialize the label area (titlebar). Button column vertically centred in labelHeight."
 	| topLeft spacing |
@@ -8605,7 +8612,7 @@ initializeLabelArea
 	self addMorph: self createExpandButton position: spacing*2@0 + topLeft.
 	self addMorph: self createMenuButton position: spacing*3@0 + topLeft! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 interiorExtent
 	"See interiorOrigin: title bar trimmed 2 logical px at the bottom, so the content
 	area is 2 logical px taller."
@@ -8614,7 +8621,7 @@ interiorExtent
 	p := super interiorExtent.
 	^ p x @ (p y - self labelHeight + (2 * s))! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 interiorOrigin
 	"Content area top = labelHeight below the window top, pulled UP 2 logical px to
 	trim the title-bar bottom (the top of the bar is covered by the perimeter stroke;
@@ -8624,32 +8631,32 @@ interiorOrigin
 	p := super interiorOrigin.
 	^ p x @ (p y + self labelHeight - (2 * s))! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 invalidateTitleArea
 	"Blueprint: our chrome fills the WHOLE morph with windowFrameColor, not
 	just the title strip. When active state changes, the side and bottom
 	borders also need to repaint, so invalidate the whole morph."
 	self redrawNeeded! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 labelHeight
 	"Title-bar height tied to the window corner radius: 2x the radius, so the
 	rounded top corners complete their curve within the bar. roundedWindowRadius
 	is logical px; multiply by hostOSScaleFactor for the physical-px value."
 	^ (Theme current roundedWindowRadius * 2) * DisplayScreen hostOSScaleFactor! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 labelXPosition
 	| f |
 	f := Preferences at: #windowTitleFont.
 	^ f lineSpacing * 5! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 minimumExtent
 	^layoutMorph minimumExtent + (0@self labelHeight)
 		max: Theme current titleBarButtonsExtent x * 6 @ 0! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 postDrawOn: aCanvas
 	"Blueprint chrome, second stage: the perimeter frame ON TOP of the (squircle-
 	clipped) content -- windowHighlight inner stroke + windowHairline outer, via
@@ -8660,11 +8667,11 @@ postDrawOn: aCanvas
 		inner: Theme current windowHighlight outer: Theme current windowHairline.
 	^ true! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 requiresVectorCanvas
 	^ true! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 rescaleButtons
 	"boxExtent changed. Update my buttons (centred in labelHeight)."
 	| buttonExtent buttonPos spacing |
@@ -8678,18 +8685,18 @@ rescaleButtons
 				aMorph morphPosition: buttonPos.
 				buttonPos := buttonPos + (spacing@0)]]! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 wantsContour
 	"Track our drawn contour (the squircle from drawOn:) so clipsSubmorphs clips
 	content to that shape rather than to our bounding rectangle."
 	^ true! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 widgetsColor
 	"Unified color architecture: widgetsColor == self color (the body color)."
 	^ self color! !
 
-!SystemWindow methodsFor: '*Blueprint' stamp: ''!
+!SystemWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 widgetsColor: aColor
 	"Set the body color AND propagate to submorphs via adoptWidgetsColor:
 	(layoutMorph/buttons/text-bg derive their colors from the pane color)."
@@ -8697,7 +8704,7 @@ widgetsColor: aColor
 	self adoptWidgetsColor: aColor.
 	self redrawNeeded! !
 
-!ChangeListWindow methodsFor: '*Blueprint' stamp: ''!
+!ChangeListWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 buildMorphicWindow
 	"Open a morphic view for the messageSet, whose label is labelString. 
 	The listView may be either single or multiple selection type"
@@ -8728,7 +8735,7 @@ buildMorphicWindow
 				addAdjusterAndMorph: self buildLowerPanes proportionalHeight: 0.6.
 			listPane limitLayoutHeight ].! !
 
-!VersionsBrowserWindow methodsFor: '*Blueprint' stamp: ''!
+!VersionsBrowserWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 buildMorphicWindow
 	"Open a morphic view for the messageSet, whose label is labelString. 
 	The listView may be either single or multiple selection type"
@@ -8757,11 +8764,11 @@ buildMorphicWindow
 				addAdjusterAndMorph: self buildLowerPanes proportionalHeight: 0.6.
 			listPane limitLayoutHeight ].! !
 
-!DebuggerWindow methodsFor: '*Blueprint' stamp: ''!
+!DebuggerWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initialExtent
 	^ Stage default standardWindowExtent * 3 // 2! !
 
-!MethodSetWindow methodsFor: '*Blueprint' stamp: ''!
+!MethodSetWindow methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 buildMorphicWindow
 	"Answer a morphic window with the given label that can display the receiver"
 
@@ -8785,23 +8792,23 @@ buildMorphicWindow
 			listPane limitLayoutHeight ].
 	model changed: #editSelection! !
 
-!TileResizeMorph class methodsFor: '*Blueprint' stamp: ''!
+!TileResizeMorph class methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 allowedArea
 	^ Stage default arena insetBy: Theme current fullScreenDeskMargin! !
 
-!PasteUpMorph methodsFor: '*Blueprint' stamp: ''!
+!PasteUpMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 backgroundImage: aForm
 	"Public setter. Clears any pre-rendered data cache and triggers a repaint."
 	backgroundImage := aForm.
 	backgroundImageData := nil.
 	self fullRepaintNeeded! !
 
-!WorldMorph methodsFor: '*Blueprint' stamp: ''!
+!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 click: aMouseButtonEvent localPosition: localEventPosition
 	"Blueprint: plain left-click on the world does nothing. Right-click still
 	opens the menu via mouseButton2Down:."! !
 
-!WorldMorph methodsFor: '*Blueprint' stamp: ''!
+!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 desktopWindows
 	"The canonical set the dock, overview and space system operate on: the managed windows currently PLACED
 	on the desktop, front-to-back. isManagedDesktopMorph selects real subjects, not chrome. Excludes a window
@@ -8809,7 +8816,7 @@ desktopWindows
 	mini-map, which must keep tracking a drag, adds that back itself (see SpaceCard>>bpDesktopMorphs)."
 	^ self submorphs select: [:m | m isManagedDesktopMorph]! !
 
-!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 14:07:26'!
+!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026, 12:07:26 pm (UTC)'!
 drawOn: aCanvas
 	"Blueprint wallpaper. Two regimes:
 	- A display-sized pre-phased wallpaper (BlueprintTheme class>>tileComposedTo:):
@@ -8840,7 +8847,7 @@ drawOn: aCanvas
 			y := y + th].
 		x := x + tw]! !
 
-!WorldMorph methodsFor: '*Blueprint' stamp: ''!
+!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 extentChanged: oldExtent
 	"Re-run BlueprintTheme>>startUp: so bg + Dock survive an extent change.
 	PasteUpMorph>>extentChanged: calls buildMagnifiedBackgroundImage which
@@ -8851,7 +8858,7 @@ extentChanged: oldExtent
 	taskbar ifNotNil: [ taskbar screenSizeChanged ].
 	[Theme current class startUp: false] on: Error do: [:ex | ]! !
 
-!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 3/Jul/2026 16:09:41'!
+!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 3/Jul/2026, 2:09:41 pm (UTC)'!
 restoreDisplay
 	"Scale-aware: world extent is in LOCAL coords, so with a world scale !!= 1 the local frame
 	must be Display extent / scale to fill the screen once the world transform scales it.
@@ -8861,7 +8868,7 @@ restoreDisplay
 	self fullRepaintNeeded.
 	Theme current class fitDisplay! !
 
-!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 3/Jul/2026 16:36:57'!
+!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 3/Jul/2026, 2:36:57 pm (UTC)'!
 showTaskbar
 	"Blueprint: build the CURRENT THEME's taskbar, not unconditionally a stock row.
 	Upstream rebuilds the desktop through here -- notably the recreateDefaultDesktop
@@ -8875,7 +8882,7 @@ showTaskbar
 				taskbar := TaskbarMorph newRow.
 				self addMorph: taskbar]]! !
 
-!WorldMorph methodsFor: '*Blueprint' stamp: ''!
+!WorldMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 worldMenuSpec
 	"Spec for the menu and shortcut keys for the World.
 	See coment at Morph >> #getMenu
@@ -8891,7 +8898,7 @@ worldMenuSpec
 	)
 ! !
 
-!MenuLineMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuLineMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 drawOn: aCanvas
 	"Thin pill: 1 dp tall, 1 dp corner radius, centered vertically in a 5 dp box.
 	8 dp horizontal pad to match menu item edges. Same ink as the menu's inner
@@ -8907,7 +8914,7 @@ drawOn: aCanvas
 			minY: cy - (lineH / 2.0) maxY: cy + (lineH / 2.0)
 			rx: 1 * s ry: 1 * s]! !
 
-!MenuLineMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuLineMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 initialize
 	"Blueprint: 5 dp tall (2 pad + 1 line + 2 pad)."
 	| s |
@@ -8915,16 +8922,16 @@ initialize
 	s := DisplayScreen hostOSScaleFactor.
 	extent := (50 * s) @ (5 * s)! !
 
-!MenuLineMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuLineMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 minimumExtent
 	| s |
 	s := DisplayScreen hostOSScaleFactor.
 	^ (10 * s) @ (5 * s)! !
 
-!MenuLineMorph methodsFor: '*Blueprint' stamp: ''!
+!MenuLineMorph methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 requiresVectorCanvas ^ true! !
 
-!TheWorldMenu class methodsFor: '*Blueprint' stamp: ''!
+!TheWorldMenu class methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 preferencesMenuOptions
 
 	^`{
@@ -9084,13 +9091,13 @@ preferencesMenuOptions
 		}`.
 ! !
 
-!MorphicCanvas methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 14:07:26'!
+!MorphicCanvas methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026, 12:07:26 pm (UTC)'!
 opaqueImage: aForm at: aPoint
 	"Draw a Form known by the caller to be fully opaque. Canvases that can exploit
 	opacity override this; the default is the regular (possibly blending) draw."
 	self image: aForm at: aPoint! !
 
-!AbstractVectorCanvas methodsFor: '*Blueprint' stamp: ''!
+!AbstractVectorCanvas methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 chromeStrokes: aRectangle radius: r scale: s inner: innerColor outer: outerColor
 	"The Blueprint chrome edge: a 1px inner highlight stroke plus a 0.5px outer hairline,
 	both concentric with a squircle of the given radius (physical px). Drawn ON TOP of
@@ -9100,14 +9107,14 @@ chromeStrokes: aRectangle radius: r scale: s inner: innerColor outer: outerColor
 	self strokeWidth: 0.5 * s color: outerColor do: [
 		self squircle: aRectangle radius: r inset: 0.25 * s]! !
 
-!AbstractVectorCanvas methodsFor: '*Blueprint' stamp: ''!
+!AbstractVectorCanvas methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 squircle: aRectangle radius: r
 	"Continuous-corner rounded-rect path for aRectangle (see squircleMinX:...). Use inside
 	fillColor:do: / strokeWidth:color:do: blocks. Radius in physical px."
 	self squircleMinX: aRectangle left maxX: aRectangle right
 		minY: aRectangle top maxY: aRectangle bottom radius: r! !
 
-!AbstractVectorCanvas methodsFor: '*Blueprint' stamp: ''!
+!AbstractVectorCanvas methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 squircle: aRectangle radius: r inset: i
 	"Concentric squircle: aRectangle shrunk by i on every side, radius reduced to match so
 	the corner stays concentric with the outline at inset 0. The standard way to keep a
@@ -9115,7 +9122,7 @@ squircle: aRectangle radius: r inset: i
 	self squircleMinX: aRectangle left + i maxX: aRectangle right - i
 		minY: aRectangle top + i maxY: aRectangle bottom - i radius: ((r - i) max: 0)! !
 
-!AbstractVectorCanvas methodsFor: '*Blueprint' stamp: ''!
+!AbstractVectorCanvas methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 squircleCornerAt: cornerPt incoming: ivec outgoing: ovec p: p a: a b: b c: c d: d r: r arcK: arcK alpha: alpha
 	"Three cubic Beziers per corner — Apple/Figma continuous corner.
 	(u, v) local frame: u along incoming, v along outgoing."
@@ -9137,7 +9144,7 @@ squircleCornerAt: cornerPt incoming: ivec outgoing: ovec p: p a: a b: b c: c d: 
 		control1: cornerPt + (ovec * (p - a - b))
 		control2: cornerPt + (ovec * (p - a))! !
 
-!AbstractVectorCanvas methodsFor: '*Blueprint' stamp: ''!
+!AbstractVectorCanvas methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 squircleMinX: xMin maxX: xMax minY: yMin maxY: yMax radius: rIn
 	"Apple/Figma continuous-corner rounded rectangle. Smoothness locked at 0.61.
 	If radius â¥ half-side, smoothness drops automatically (down to 0 = circle).
@@ -9187,7 +9194,7 @@ squircleMinX: xMin maxX: xMax minY: yMin maxY: yMax radius: rIn
 		p: p a: a b: b c: c d: d r: r arcK: arcK alpha: alpha.
 	self closePath! !
 
-!HybridCanvas methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026 14:44:23'!
+!HybridCanvas methodsFor: '*Blueprint' stamp: 'ML 5/Jul/2026, 12:44:23 pm (UTC)'!
 drawWorldBackground: aWorldMorph rects: worldBackgroundDamage
 	"Draw worldBackgroundDamage rects for aWorldMorph. Do not include submorphs."
 	worldBackgroundDamage do: [ :r |
@@ -9196,7 +9203,7 @@ drawWorldBackground: aWorldMorph rects: worldBackgroundDamage
 		self onMorphIdsDo: [
 			aWorldMorph drawOn: self ]].! !
 
-!HybridCanvas methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026 14:07:26'!
+!HybridCanvas methodsFor: '*Blueprint' stamp: 'ML 4/Jul/2026, 12:07:26 pm (UTC)'!
 opaqueImage: aForm at: aPoint
 	"Fully opaque Form: plain store (Form over) instead of per-pixel alpha blending --
 	7x faster for display-sized wallpaper repair. The morph-ids branch mirrors
@@ -9212,7 +9219,7 @@ opaqueImage: aForm at: aPoint
 	engine colorMap: (aForm colormapIfNeededFor: form); fillColor: nil.
 	engine image: aForm at: p sourceRect: aForm boundingBox rule: Form over! !
 
-!VectorEngineWithPlugin methodsFor: '*Blueprint' stamp: ''!
+!VectorEngineWithPlugin methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 finishPath: ensureClosePath
 	"Blueprint patch: compensate for a missing '+1' on spanBottom in the C plugin.
 	The plugin returns spanLeft/Top/Right after adding +1 (effectively ceiling), but
@@ -9246,7 +9253,7 @@ finishPath: ensureClosePath
 			ifFalse: [
 				self primBlendStrokeOnlyLeft: spanLeft top: spanTop right: spanRight bottom: spanBottom]]! !
 
-!VectorEngineWithPlugin class methodsFor: '*Blueprint' stamp: ''!
+!VectorEngineWithPlugin class methodsFor: '*Blueprint' stamp: 'ML 10/Aug/2026, 6:21:17 pm (UTC)'!
 protected: aBlock
 	"VectorEnginePlugin is not reentrant. A non-UI process must wait for the UI to be
 	in a safe state before touching it; it blocks on a Semaphore signalled from

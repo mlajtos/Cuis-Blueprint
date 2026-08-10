@@ -14,11 +14,51 @@ It's built unusually, too: **written by a coding agent** driving the live image 
 
 File in `Blueprint.pck.st` (e.g. from a File List: select it, `install package`). Everything else is automatic: the package pulls in `WebClient` (shipped with Cuis; used for HTTPS), downloads the [Tabler Icons](https://tabler.io/icons) font from the jsDelivr CDN on first install, and activates the theme, dock and virtual desktops on its own — no manual step.
 
-Works on a stock current Cuis image. If you ever need to re-activate by hand:
+Works on a stock current Cuis image (rolling release, update #8090 or later — the package says so via `requires: 'Cuis-Base'`, so an older image will refuse the install rather than half-work). If you ever need to re-activate by hand:
 
 ```smalltalk
 BlueprintTheme beCurrent.
 ```
+
+## Blueprint overrides Cuis
+
+Blueprint is not a pure add-on. Besides its own classes and the ~77 brand-new methods it adds to base classes, it **replaces 64 existing methods of the base image** — window chrome (`SystemWindow`), the menu system (`MenuMorph`, `MenuItemMorph`, `MenuLineMorph`), scrollbars, pieces of `WorldMorph` and `Morph`, a few tool windows. That *is* the mechanism of the reskin: install Blueprint and the stock UI is different at the method level.
+
+The [Cuis code-management docs](https://github.com/Cuis-Smalltalk/Cuis-Smalltalk-Dev/blob/master/Documentation/CodeManagementInCuis.md) draw the package line elsewhere — packages hold pure additions, and changes to the base image travel in ChangeSets. Blueprint knowingly crosses that line, and that has consequences worth knowing:
+
+- While Blueprint is loaded, a Cuis update that touches one of these 64 methods is shadowed by Blueprint's version, and the package will show up as dirty.
+- Deleting the package does **not** undo the overrides — in Cuis, *Delete* merges a package's code into the base image. The way out of Blueprint is a fresh image, not an uninstall.
+- This is why the package pins the base version it was last tested on instead of accepting any image it lands in.
+
+<details>
+<summary>The 64 overridden methods</summary>
+
+```
+BoxMorph          fullScreen
+ChangeListWindow  buildMorphicWindow
+DebuggerWindow    initialExtent
+HybridCanvas      drawWorldBackground:rects:
+MenuItemMorph     contents: contentsWithMarkers:inverse: drawOn: hasMarker initialize
+                  isEnabled: isSelected: minItemWidth mouseEnter: select setIcon: subMenu:
+MenuLineMorph     drawOn: initialize minimumExtent
+MenuMorph         addStayUpIcons addTitle: adjustSubmorphsLayout displayFiltered:
+                  drawOn: removeStayUpBox
+MethodSetWindow   buildMorphicWindow
+Morph             addHalo: addItemTo:fromSpec:submenus: collapse
+ScrollBar         color: computeSlider drawOn: expandSlider initializeSlider sliderGrabbedAt:
+SystemWindow      allowedArea defaultColor drawLabelOn: drawOn: extentChanged:
+                  fullyCoveredRectangle initialExtent initialFrameIn: initialize
+                  initializeLabelArea interiorExtent interiorOrigin invalidateTitleArea
+                  labelHeight labelXPosition minimumExtent rescaleButtons
+                  widgetsColor widgetsColor:
+TextModelMorph    defaultColor drawOn:
+VectorEngineWithPlugin  finishPath:
+VersionsBrowserWindow   buildMorphicWindow
+WorldMorph        click:localPosition: drawOn: extentChanged: restoreDisplay
+                  showTaskbar worldMenuSpec
+```
+
+</details>
 
 ## The type scale
 
